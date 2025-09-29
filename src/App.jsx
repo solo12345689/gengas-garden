@@ -16,9 +16,7 @@ export default function App() {
   const [angle, setAngle] = useState(0);
 
   useEffect(() => {
-    fetch("/public/countries.json")
-      .then((r) => r.json())
-      .then((data) => setCountries(data));
+    fetch("/public/countries.json").then(r=>r.json()).then(setCountries);
   }, []);
 
   useEffect(() => {
@@ -34,7 +32,7 @@ export default function App() {
     let raf;
     function rotate() {
       if (globeRef.current && !selectedCountry) {
-        setAngle((a) => a + 0.2);
+        setAngle(a => a + 0.2);
         globeRef.current.pointOfView({ lat: 20, lng: angle, altitude: 2.2 }, 50);
       }
       raf = requestAnimationFrame(rotate);
@@ -47,18 +45,15 @@ export default function App() {
     if (!selectedCountry) return;
     const code = selectedCountry.toLowerCase();
     fetch(`/public/channels/${code}.json`)
-      .then((r) => {
-        if (!r.ok) return [];
-        return r.json();
-      })
+      .then(r => r.ok ? r.json() : [])
       .then(setChannels)
-      .catch(() => setChannels([]));
+      .catch(()=>setChannels([]));
   }, [selectedCountry]);
 
   function handlePolygonClick(d) {
     const iso = (d.properties && (d.properties.iso_a2 || d.properties.ISO_A2 || d.properties.iso_a3 || d.id)) || null;
     const code = iso ? String(iso).toLowerCase() : null;
-    const found = countries.find(c => c.code === code || c.code === code?.toLowerCase() || c.code === code?.toUpperCase());
+    const found = countries.find(c => c.code === code || c.code === code?.toLowerCase());
     if (found) {
       setSelectedCountry(found.code);
       const centroid = getFeatureCentroid(d);
@@ -127,17 +122,17 @@ export default function App() {
               <button className="text-red-400" onClick={() => { setSelectedCountry(null); setChannels([]); }}>✕</button>
             </div>
 
-            {channels.length === 0 ? (
-              <div className="text-gray-400">No channels available for this country.</div>
-            ) : (
-              channels.map((ch, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-2 rounded hover:bg-gray-800 cursor-pointer" onClick={() => setPlaying(ch)} onContextMenu={(e)=>{ e.preventDefault(); setPip(ch); setPipExpanded(false); }}>
-                  {ch.logo ? <img src={ch.logo} alt="" className="w-8 h-5 object-cover rounded" /> : <div className="w-8 h-5 bg-gray-700 rounded" />}
-                  <div className="flex-1">{ch.name}</div>
-                  {ch.language && <div className="text-xs text-gray-400">{ch.language}</div>}
-                </div>
-              ))
-            )}
+        {channels.length === 0 ? (
+          <div className="text-gray-400">No channels available for this country.</div>
+        ) : (
+          channels.map((ch, idx) => (
+            <div key={idx} className="flex items-center gap-3 p-2 rounded hover:bg-gray-800 cursor-pointer" onClick={() => setPlaying(ch)} onContextMenu={(e)=>{ e.preventDefault(); setPip(ch); setPipExpanded(false); }}>
+              {ch.logo ? <img src={ch.logo} alt="" className="w-8 h-5 object-cover rounded" /> : <div className="w-8 h-5 bg-gray-700 rounded" />}
+              <div className="flex-1">{ch.name}</div>
+              {ch.language && <div className="text-xs text-gray-400">{ch.language}</div>}
+            </div>
+          ))
+        )}
           </div>
         )}
 

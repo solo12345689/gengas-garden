@@ -1,10 +1,6 @@
 [
   {
-    "code": "in",
-    "name": "IN"
-  },
-  {
-    "code": "us",
-    "name": "US"
+    "code": "sample",
+    "name": "Sample Country"
   }
 ]
