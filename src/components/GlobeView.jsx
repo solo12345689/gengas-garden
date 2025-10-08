@@ -1,0 +1,3 @@
+import React, { useRef } from 'react';
+import Globe from 'react-globe.gl';
+export default function GlobeView({countries,onCountryClick}){ const ref=useRef(); return (<div className="w-full h-full">{countries && <Globe ref={ref} globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg" backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png" polygonsData={countries} polygonCapColor={()=>'rgba(100,100,100,0.15)'} polygonSideColor={()=>'rgba(0,0,0,0.15)'} polygonStrokeColor={()=>'#111'} onPolygonClick={(d)=> onCountryClick && onCountryClick(d.properties && (d.properties.code || d.properties.ISO_A2 || d.id))} width={window.innerWidth} height={window.innerHeight}/>}</div>)}
