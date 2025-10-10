@@ -1,1 +1,48 @@
-{}
+{
+  "India": {
+    "code": "IN",
+    "name": "India",
+    "capital": "New Delhi",
+    "timezone": "Asia/Kolkata",
+    "channels": [
+      {
+        "name": "Sample IPTV Channel",
+        "url": "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4",
+        "type": "iptv",
+        "logo": null,
+        "tags": [
+          "news",
+          "hindi"
+        ]
+      },
+      {
+        "name": "Sample YouTube Livestream",
+        "url": "https://www.youtube.com/watch?v=5qap5aO4i9A",
+        "type": "youtube",
+        "logo": null,
+        "tags": [
+          "music",
+          "live"
+        ]
+      }
+    ]
+  },
+  "United States": {
+    "code": "US",
+    "name": "United States",
+    "capital": "Washington, D.C.",
+    "timezone": "America/New_York",
+    "channels": [
+      {
+        "name": "Sample US Channel",
+        "url": "https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4",
+        "type": "iptv",
+        "logo": null,
+        "tags": [
+          "entertainment",
+          "eng"
+        ]
+      }
+    ]
+  }
+}

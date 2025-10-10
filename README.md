@@ -1,2 +1,8 @@
-# Gengas Garden - TV Garden style clone
-Run `npm install` then `npm run dev`.
+# Gengas Garden - Single Page
+
+Run:
+
+npm install
+npm run dev
+
+The app fetches remote channels.json then falls back to public/channels.json
