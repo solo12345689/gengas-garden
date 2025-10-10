@@ -1,8 +1,8 @@
-# Gengas Garden - Single Page
+# Gengas Garden
+
+This project includes channels.json (merged) in public and fetches remote channels.json by default.
 
 Run:
 
 npm install
 npm run dev
-
-The app fetches remote channels.json then falls back to public/channels.json
