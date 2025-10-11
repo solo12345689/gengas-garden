@@ -10,10 +10,7 @@ export default function App(){
   const [selected,setSelected]=useState(null)
 
   useEffect(()=>{
-    loadChannels().then(data=>{
-      if(!data) return;
-      setCountries(data)
-    })
+    loadChannels().then(data=>{ if(!data) return; setCountries(data) })
   },[])
 
   return (
