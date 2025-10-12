@@ -1,0 +1,9 @@
+{
+  "Sample": {
+    "code": "XX",
+    "name": "Sample",
+    "capital": "Nowhere",
+    "timezone": "UTC",
+    "channels": []
+  }
+}

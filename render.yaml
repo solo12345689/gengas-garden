@@ -1,8 +1,6 @@
 services:
   - type: web
     name: gengas-garden
-    env: node
+    env: docker
     plan: free
-    buildCommand: "npm install && npm run build"
-    startCommand: "npm run start"
-    staticPublishPath: dist
+    dockerfilePath: ./Dockerfile
