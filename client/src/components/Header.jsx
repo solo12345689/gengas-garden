@@ -1,0 +1,9 @@
+import React from 'react'
+export default function Header(){
+  return (
+    <header className="fixed top-0 left-0 right-0 header p-4 flex items-center gap-4 bg-black/40">
+      <div className="ml-4 px-3 py-1 rounded header-brand font-bold text-black bg-gradient-to-r from-green-400 to-green-700">TV</div>
+      <h1 className="text-xl font-bold">Gengas Garden</h1>
+    </header>
+  )
+}

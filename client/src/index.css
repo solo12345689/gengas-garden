@@ -2,5 +2,5 @@
 @tailwind components;
 @tailwind utilities;
 html,body,#root{height:100%;}
-body{background:radial-gradient(ellipse at center,#000 0%, #020204 40%, #05060a 100%); color:#e6eef8; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial}
-.card{background:rgba(11,17,28,0.85); box-shadow: 0 6px 24px rgba(3,6,12,0.6); border:1px solid rgba(255,255,255,0.03);}
+body{background:radial-gradient(ellipse at center,#000 0%, #06060a 40%, #0b0f15 100%); color:#e6eef8; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); box-shadow: 0 8px 30px rgba(2,8,20,0.6);}

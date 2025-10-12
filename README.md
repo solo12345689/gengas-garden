@@ -1,2 +1,4 @@
-# Gengas Garden Monorepo
-Client and server with yt-dlp backend. See Dockerfile for production.
+# Gengas Garden
+Monorepo with client (React+Vite) and server (Express + yt-dlp)
+
+See Dockerfile for deployment.
