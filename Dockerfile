@@ -9,10 +9,10 @@ COPY client/package.json client/package-lock.json ./client/
 COPY server/package.json server/package-lock.json ./server/
 
 # Install dependencies and build client
-RUN cd client && npm install && npm run build
+RUN cd client && npm install --omit=dev && npm run build
 
-# Install backend dependenci
-RUN cd  server && npm install && npm run build
+# Install backend dependencies
+RUN cd server && npm install --omit=dev
 
 # Copy all remaining project files
 COPY . .
