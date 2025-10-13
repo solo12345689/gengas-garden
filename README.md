@@ -1,4 +1,1 @@
-# Gengas Garden
-Monorepo with client (React+Vite) and server (Express + yt-dlp)
-
-See Dockerfile for deployment.
+Gengas Garden fullready ZIP. IMPORTANT: this ZIP includes placeholder package-lock.json files. For deterministic builds run `npm install` in client/ and server/ locally and commit the generated package-lock.json files before deploying.

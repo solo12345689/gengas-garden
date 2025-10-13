@@ -1,15 +1,2 @@
-import React from 'react'
 import { usePlayer } from '../context/PlayerContext'
-import ChannelCard from './ChannelCard'
-export default function ChannelList({country}){
-  const { playChannel } = usePlayer();
-  const chs = country.channels || [];
-  return (
-    <div>
-      <div className="font-bold mb-2">{country.name} — Channels</div>
-      <div className="space-y-2 max-h-[70vh] overflow-y-auto">
-        {chs.map((ch,i)=> <div key={i}><ChannelCard channel={ch} onClick={()=> playChannel(ch)} /></div>)}
-      </div>
-    </div>
-  )
-}
+export default function ChannelList({country}){ const { playChannel } = usePlayer(); const chs = country.channels || []; return (<div><div className="font-bold mb-2">{country.name} — Channels</div><div className="space-y-2 max-h-[70vh] overflow-y-auto">{chs.map((ch,i)=>(<div key={i} className="p-2 rounded hover:bg-gray-800 cursor-pointer flex items-center gap-2" onClick={()=> playChannel(ch)}><div className="flex-1"><div className="font-medium text-sm">{ch.name}</div><div className="text-xs text-gray-400">{(ch.tags||[]).slice(0,3).join(', ')}</div></div></div>))}</div></div>) }

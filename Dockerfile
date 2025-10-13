@@ -1,25 +1,13 @@
-# Use official Node image
-FROM node:20
-
-# Set working directory
-WORKDIR /app
-
-# Copy package manifests first (for caching)
-COPY client/package.json client/package-lock.json ./client/
-COPY server/package.json server/package-lock.json ./server/
-
-# Install dependencies and build client
+FROM node:20-bullseye-slim
+RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN pip3 install --upgrade yt-dlp
+WORKDIR /usr/src/app
+COPY client/package.json ./client/package.json
+COPY server/package.json ./server/package.json
+# Install server deps and build client
 RUN cd client && npm install --omit=dev && npm run build
-
-# Install backend dependencies
 RUN cd server && npm install --omit=dev
-
-# Copy all remaining project files
+# Copy rest of files
 COPY . .
-
-# Expose port (Render expects dynamic port)
-ENV PORT=10000
 EXPOSE 10000
-
-# Start both frontend (static) and backend
-CMD ["node", "server/index.js"]
+CMD ["node","server/index.js"]
