@@ -1,13 +1,17 @@
-FROM node:20-bullseye-slim
-RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg ca-certificates && rm -rf /var/lib/apt/lists/*
-RUN pip3 install --upgrade yt-dlp
-WORKDIR /usr/src/app
-COPY client/package.json ./client/package.json
-COPY server/package.json ./server/package.json
-# Install server deps and build client
+FROM node:20
+WORKDIR /app
+
+# Copy only package.json (skip lockfiles)
+COPY client/package.json ./client/
+COPY server/package.json ./server/
+
+# Install deps
 RUN cd client && npm install --omit=dev && npm run build
 RUN cd server && npm install --omit=dev
-# Copy rest of files
+
 COPY . .
+
+ENV PORT=10000
 EXPOSE 10000
-CMD ["node","server/index.js"]
+
+CMD ["node", "server/index.js"]
