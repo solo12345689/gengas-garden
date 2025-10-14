@@ -1,27 +1,30 @@
-# ---- Build client ----
-FROM node:18 AS build
+# ---- Base build ----
+FROM node:20-slim AS build
+
 WORKDIR /app
 
-# Copy and install client
-COPY client/package*.json ./client/
+# Copy client files
+COPY client ./client
+
+# Build client
 RUN cd client && npm install && npm run build
 
 # ---- Server stage ----
-FROM node:18
-WORKDIR /app
+FROM node:20-slim AS production
 
-# Install Python for yt-dlp
-RUN apt-get update && apt-get install -y python3 python3-pip
+WORKDIR /app
 
 # Copy server files
 COPY server ./server
 
-# Copy built client
-COPY --from=build /app/client/dist ./client/dist
+# Copy built client from previous stage
+COPY --from=build /app/client/dist ./server/public
 
-WORKDIR /app/server
-RUN npm install --omit=dev
+# Install server dependencies and Python for yt-dlp
+RUN apt-get update && apt-get install -y python3 python3-pip && \
+    cd server && npm install --omit=dev
 
 EXPOSE 10000
-CMD ["node", "index.js"]
+CMD ["node", "server/index.js"]
+
 
