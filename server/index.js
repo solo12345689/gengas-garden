@@ -46,11 +46,10 @@ app.get("/api/play", (req, res) => {
 });
 
 // Serve React build
-app.use(express.static(path.join(__dirname, "../client/dist")));
-
+app.use(express.static(path.join(__dirname, 'public')));
 // Fallback (React Router)
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+app.get('*', (req, res) => {
+ res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start
