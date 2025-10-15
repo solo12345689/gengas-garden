@@ -1,31 +1,30 @@
-# ---------- Build stage ----------
+# ---------- Base build stage ----------
 FROM node:18 AS build
+
 WORKDIR /app
 
-# Copy and build client
-COPY client ./client
+# Build frontend
+COPY client/package*.json ./client/
 RUN cd client && npm install && npm run build
 
 # ---------- Production stage ----------
-FROM node:18-slim
+FROM node:18
+
 WORKDIR /app
 
-# Install Python + link python3 -> python
-RUN apt-get update && \
-    apt-get install -y python3 python3-pip && \
-    ln -s /usr/bin/python3 /usr/bin/python && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Install Python for yt-dlp
+RUN apt-get update && apt-get install -y python3 python3-pip
 
-# Copy server and install dependencies
+# Copy built frontend
+COPY --from=build /app/client/dist ./server/public
+
+# Copy backend
 COPY server/package*.json ./server/
 RUN cd server && npm install --omit=dev
 
-# Copy server source + built client
 COPY server ./server
-COPY --from=build /app/client/dist ./server/public
 
-WORKDIR /app/server
 EXPOSE 10000
+WORKDIR /app/server
 
-# ✅ Correct entry file
-CMD ["node", "index.js"]
+CMD ["npm", "start"]
