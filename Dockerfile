@@ -2,8 +2,10 @@
 FROM node:18 AS build
 WORKDIR /app
 
-# Copy and build client
-COPY client/package*.json ./client/
+# Copy full client code
+COPY client ./client
+
+# Build client
 RUN cd client && npm install && npm run build
 
 # ---------- Production stage ----------
@@ -11,12 +13,12 @@ FROM node:18-slim
 
 WORKDIR /app
 
-# Copy server files
+# Copy server package files and install deps
 COPY server/package*.json ./server/
 RUN apt-get update && apt-get install -y python3 python3-pip && \
     cd server && npm install --omit=dev
 
-# Copy server source code
+# Copy server source
 COPY server ./server
 
 # Copy built client into public directory
