@@ -27,4 +27,5 @@ COPY --from=build /app/client/dist ./server/public
 WORKDIR /app/server
 EXPOSE 10000
 
-CMD ["node", "server.js"]
+# ✅ Correct entry file
+CMD ["node", "index.js"]
