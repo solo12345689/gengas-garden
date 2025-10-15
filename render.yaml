@@ -1,11 +1,6 @@
 services:
   - type: web
     name: gengas-garden
-    env: node
+    env: docker
     plan: free
-    region: oregon
-    buildCommand: docker build -t gengas-garden .
-    startCommand: docker run -p 10000:10000 gengas-garden
-    envVars:
-      - key: PORT
-        value: 10000
+    autoDeploy: true
