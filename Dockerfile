@@ -1,4 +1,4 @@
-# ---------- Stage 1: Build the client ----------
+# ---------- Stage 1: Build the React client ----------
 FROM node:18-alpine AS build
 
 WORKDIR /app/client
@@ -7,10 +7,10 @@ WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm install
 
-# Copy the rest of the client source
+# Copy the rest of the client code
 COPY client/ .
 
-# Build the React/Vite client
+# Build the client
 RUN npm run build
 
 # ---------- Stage 2: Build the server ----------
@@ -18,20 +18,18 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy server files
+# Copy server dependencies and install
 COPY server/package*.json ./server/
-RUN cd server && npm install
+RUN cd server && npm install --omit=dev
 
-# Copy the built client from the previous stage
-COPY --from=build /app/client/dist ./client/dist
+# Copy server code
 COPY server/ ./server
 
-# Set environment variables
+# Copy built client files from previous stage
+COPY --from=build /app/client/dist ./client/dist
+
 ENV NODE_ENV=production
 ENV PORT=10000
-
-# Expose the port
 EXPOSE 10000
 
-# Start the server
 CMD ["node", "server/server.js"]
