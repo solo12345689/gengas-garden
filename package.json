@@ -4,5 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node server/index.js"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4"
   }
 }
