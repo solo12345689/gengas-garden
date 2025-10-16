@@ -1,35 +1,30 @@
-# ---------- Stage 1: Build the React client ----------
-FROM node:18-alpine AS build
-
-WORKDIR /app/client
-
-# Copy and install client dependencies
-COPY client/package*.json ./
-RUN npm install
-
-# Copy the rest of the client code
-COPY client/ .
-
-# Build the client
-RUN npm run build
-
-# ---------- Stage 2: Build the server ----------
-FROM node:18-alpine
-
+# ---------- Base Stage ----------
+FROM node:18-alpine AS base
 WORKDIR /app
 
-# Copy server dependencies and install
+# ---------- Build Client ----------
+FROM base AS build
+WORKDIR /app/client
+COPY client/package*.json ./
+RUN npm install
+COPY client ./
+RUN npm run build
+
+# ---------- Server Stage ----------
+FROM base AS production
+WORKDIR /app
+
+# Install Python (for yt-dlp if you use it)
+RUN apk add --no-cache python3 py3-pip
+
+# Copy server
 COPY server/package*.json ./server/
-RUN cd server && npm install --omit=dev
+WORKDIR /app/server
+RUN npm install --omit=dev
 
-# Copy server code
-COPY server/ ./server
+# Copy built client
+COPY --from=build /app/client/dist ./public
 
-# Copy built client files from previous stage
-COPY --from=build /app/client/dist ./client/dist
-
-ENV NODE_ENV=production
-ENV PORT=10000
 EXPOSE 10000
+CMD ["node", "server.js"]
 
-CMD ["node", "server/server.js"]
