@@ -1,23 +1,37 @@
-# ---------- Build client ----------
-FROM node:20-alpine AS build
+# ---------- Stage 1: Build the client ----------
+FROM node:18-alpine AS build
+
+WORKDIR /app/client
+
+# Copy and install client dependencies
+COPY client/package*.json ./
+RUN npm install
+
+# Copy the rest of the client source
+COPY client/ .
+
+# Build the React/Vite client
+RUN npm run build
+
+# ---------- Stage 2: Build the server ----------
+FROM node:18-alpine
+
 WORKDIR /app
-COPY client/package*.json ./client/
-RUN cd client && npm install
-COPY client ./client
-RUN cd client && npm run build
 
-# ---------- Production server ----------
-FROM node:20-alpine
-WORKDIR /app
-
-# Install Python (for yt-dlp)
-RUN apk add --no-cache python3 py3-pip
-
-# Copy built client and server
-COPY --from=build /app/client/dist ./server/public
+# Copy server files
 COPY server/package*.json ./server/
-RUN cd server && npm install --omit=dev
-COPY server ./server
+RUN cd server && npm install
 
+# Copy the built client from the previous stage
+COPY --from=build /app/client/dist ./client/dist
+COPY server/ ./server
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=10000
+
+# Expose the port
 EXPOSE 10000
-CMD ["node", "server/index.js"]
+
+# Start the server
+CMD ["node", "server/server.js"]
