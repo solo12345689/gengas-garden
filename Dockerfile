@@ -1,30 +1,23 @@
-# ---------- Base build stage ----------
-FROM node:18 AS build
-
+# ---------- Build client ----------
+FROM node:20-alpine AS build
 WORKDIR /app
-
-# Build frontend
 COPY client/package*.json ./client/
-RUN cd client && npm install && npm run build
+RUN cd client && npm install
+COPY client ./client
+RUN cd client && npm run build
 
-# ---------- Production stage ----------
-FROM node:18
-
+# ---------- Production server ----------
+FROM node:20-alpine
 WORKDIR /app
 
-# Install Python for yt-dlp
-RUN apt-get update && apt-get install -y python3 python3-pip
+# Install Python (for yt-dlp)
+RUN apk add --no-cache python3 py3-pip
 
-# Copy built frontend
+# Copy built client and server
 COPY --from=build /app/client/dist ./server/public
-
-# Copy backend
 COPY server/package*.json ./server/
 RUN cd server && npm install --omit=dev
-
 COPY server ./server
 
 EXPOSE 10000
-WORKDIR /app/server
-
-CMD ["npm", "start"]
+CMD ["node", "server/index.js"]
