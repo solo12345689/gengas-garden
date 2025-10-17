@@ -1,17 +1,9 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-app.get("/api/channels", (req, res) => {
-  try {
-    const dataPath = path.join(__dirname, "channels.json");
-    const channels = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
-    res.json(channels);
-  } catch (err) {
-    console.error("Error reading channels.json:", err);
-    res.status(500).json({ error: "Could not load channels" });
+{
+  "Sample": {
+    "code": "XX",
+    "name": "Sample",
+    "capital": "Nowhere",
+    "timezone": "UTC",
+    "channels": []
   }
-});
+}
