@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import youtubedl from "youtube-dl-exec"; // <-- CommonJS package import
+import youtubedl from "youtube-dl-exec"; // CommonJS package fix
 
 const { exec } = youtubedl;
 const app = express();
@@ -12,7 +12,6 @@ app.get("/", (req, res) => {
   res.send("🎧 Gengas Garden backend running");
 });
 
-// Example endpoint
 app.get("/video", async (req, res) => {
   const url = req.query.url;
   try {
