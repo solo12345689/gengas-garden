@@ -7,9 +7,9 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
+    "axios": "^1.12.2",
     "cors": "^2.8.5",
-    "axios": "^1.7.3",
-    "youtube-dl-exec": "^3.0.4"
+    "express": "^4.21.2",
+    "youtube-dl-exec": "^3.0.26"
   }
 }
