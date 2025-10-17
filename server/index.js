@@ -1,50 +1,33 @@
 import express from "express";
 import cors from "cors";
-import youtubedl from "youtube-dl-exec";
+import youtubedl from "youtube-dl-exec"; // <-- CommonJS package import
+
 const { exec } = youtubedl;
-
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// 🧩 Test route
 app.get("/", (req, res) => {
-  res.send("✅ Gengas Garden Server is running...");
+  res.send("🎧 Gengas Garden backend running");
 });
 
-// 🎥 Example YouTube downloader route
-app.post("/api/download", async (req, res) => {
+// Example endpoint
+app.get("/video", async (req, res) => {
+  const url = req.query.url;
   try {
-    const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ error: "Missing 'url' in request body" });
-    }
-
-    console.log(`Downloading: ${url}`);
-
     const result = await exec(url, {
       dumpSingleJson: true,
-      noCheckCertificates: true,
       noWarnings: true,
       preferFreeFormats: true,
+      addHeader: ["referer:youtube.com", "user-agent:googlebot"],
     });
-
-    res.json({
-      title: result.title,
-      duration: result.duration,
-      thumbnail: result.thumbnail,
-      url: result.url,
-    });
-  } catch (err) {
-    console.error("Download error:", err);
+    res.json(result);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Failed to fetch video data" });
   }
 });
 
-// 🟢 Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
