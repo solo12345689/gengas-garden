@@ -1,32 +1,38 @@
 import express from "express";
 import cors from "cors";
-import youtubedl from "youtube-dl-exec"; // CommonJS package fix
+import path from "path";
+import { fileURLToPath } from "url";
 
-const { exec } = youtubedl;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
+const PORT = process.env.PORT || 5000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("🎧 Gengas Garden backend running");
-});
-
-app.get("/video", async (req, res) => {
-  const url = req.query.url;
+// Example API route
+app.get("/api/channels", (req, res) => {
   try {
-    const result = await exec(url, {
-      dumpSingleJson: true,
-      noWarnings: true,
-      preferFreeFormats: true,
-      addHeader: ["referer:youtube.com", "user-agent:googlebot"],
-    });
-    res.json(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to fetch video data" });
+    const channels = [
+      { id: 1, name: "Radio Garden", url: "https://example.com" },
+      { id: 2, name: "BBC Radio", url: "https://bbc.co.uk" },
+    ];
+    res.json(channels);
+  } catch (err) {
+    res.status(500).json({ error: "channels not available" });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+// Serve React client (from /public or /client/dist)
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.listen(PORT, () => {
+  console.log(`🎧 Gengas Garden backend running on port ${PORT}`);
+});
