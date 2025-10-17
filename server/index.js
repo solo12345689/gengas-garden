@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
-import { exec } from "youtube-dl-exec";
+import youtubedl from "youtube-dl-exec";
+const { exec } = youtubedl;
 
 const app = express();
 const PORT = process.env.PORT || 5000;
