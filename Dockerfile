@@ -1,35 +1,31 @@
-# ---------- Base Node Image ----------
-FROM node:18-alpine AS base
-WORKDIR /app
-
-# ---------- Build Client ----------
-FROM base AS build
+# ---------- Stage 1: Build client ----------
+FROM node:22-alpine AS build
 WORKDIR /app/client
+
+# Copy and install client dependencies
 COPY client/package*.json ./
 RUN npm install
-COPY client ./
+
+# Copy the rest of the client files and build
+COPY client/ .
 RUN npm run build
 
-# ---------- Production Server ----------
-FROM base AS production
+# ---------- Stage 2: Server ----------
+FROM node:22-alpine AS server
 WORKDIR /app
 
-# Install Python (for yt-dlp if needed)
-RUN apk add --no-cache python3 py3-pip
-
-# Copy server dependencies and install them
+# Copy server package files and install dependencies
 COPY server/package*.json ./server/
-WORKDIR /app/server
-RUN npm install --omit=dev
+RUN cd server && npm install --omit=dev
 
-# Copy the server source code
-COPY server ./ 
+# Copy server source
+COPY server ./server
 
-# Copy the built frontend into server/public
-COPY --from=build /app/client/dist ./public
+# Copy built client from previous stage
+COPY --from=build /app/client/dist ./server/public
 
-# Expose the server port
-EXPOSE 10000
+# Expose port
+EXPOSE 5000
 
-# Run the backend
-CMD ["node", "index.js"]
+# Run the server
+CMD ["node", "server/index.js"]
