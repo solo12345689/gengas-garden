@@ -2,11 +2,11 @@
 FROM node:22-alpine AS build
 WORKDIR /app/client
 
-# Copy and install client dependencies
+# Install client dependencies
 COPY client/package*.json ./
 RUN npm install
 
-# Copy the rest of the client files and build
+# Copy and build client
 COPY client/ .
 RUN npm run build
 
@@ -14,18 +14,26 @@ RUN npm run build
 FROM node:22-alpine AS server
 WORKDIR /app
 
-# Copy server package files and install dependencies
+# Install Python (required for youtube-dl-exec)
+RUN apk add --no-cache python3 py3-pip
+
+# Copy and install server dependencies
 COPY server/package*.json ./server/
-RUN cd server && npm install --omit=dev
+WORKDIR /app/server
 
-# Copy server source
-COPY server ./server
+# Skip youtube-dl-exec python check during install
+ENV YOUTUBE_DL_SKIP_PYTHON_CHECK=1
 
-# Copy built client from previous stage
-COPY --from=build /app/client/dist ./server/public
+RUN npm install --omit=dev
+
+# Copy the rest of the server
+COPY ./server .
+
+# Copy built client
+COPY --from=build /app/client/dist ./public
 
 # Expose port
 EXPOSE 5000
 
-# Run the server
-CMD ["node", "server/index.js"]
+# Start the server
+CMD ["node", "index.js"]
