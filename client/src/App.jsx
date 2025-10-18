@@ -1,38 +1,40 @@
-import React, { useEffect, useState } from 'react'
+import React, {useEffect,useState} from 'react'
 import Header from './components/Header'
-import CountryList from './components/CountryList'
+import CountryGrid from './components/CountryGrid'
 import ChannelList from './components/ChannelList'
 import Player from './components/Player'
+import { loadChannels } from './utils/fetchChannels'
 
 export default function App(){
-  const [countries, setCountries] = useState(null)
-  const [selectedCountry, setSelectedCountry] = useState(null)
+  const [countries,setCountries]=useState(null)
+  const [selected,setSelected]=useState(null)
+  const [playing,setPlaying]=useState(null)
 
   useEffect(()=>{
-    fetch('/api/channels')
-      .then(r=>r.json())
-      .then(data=> setCountries(data))
-      .catch(e=> console.error('channels fetch failed', e))
+    loadChannels().then(data=>{
+      if(!data) return;
+      setCountries(data)
+    })
   },[])
 
-  if(!countries) return <div className="flex h-screen items-center justify-center">Loading channels...</div>
-
-  const list = Object.values(countries)
-
+  function onCountryClick(country){
+    setSelected(country)
+  }
+  function onPlay(ch){
+    if(ch.type==='youtube'){
+      window.open(ch.url, '_blank', 'noopener')
+    } else {
+      setPlaying(ch)
+    }
+  }
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen min-w-screen bg-black text-white">
       <Header />
-      <main className="p-6 pt-20">
-        <div className="grid md:grid-cols-4 gap-4">
-          <div className="md:col-span-3">
-            <CountryList countries={list} onSelect={setSelectedCountry} />
-          </div>
-          <aside className="md:col-span-1">
-            {selectedCountry? <ChannelList country={selectedCountry} /> : <div className="p-4 text-gray-400">Select a country</div>}
-          </aside>
-        </div>
+      <main className="pt-20">
+        <CountryGrid countries={countries} onCountryClick={onCountryClick} />
+        <ChannelList country={selected} onPlay={onPlay} onClose={()=>setSelected(null)} />
+        <Player channel={playing} onClose={()=>setPlaying(null)} />
       </main>
-      <Player />
     </div>
   )
 }
