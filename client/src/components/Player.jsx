@@ -1,35 +1,21 @@
-import React, { useEffect, useState } from 'react'
-import { usePlayer } from '../context/PlayerContext'
-import { requestStream } from '../utils/api'
-
-export default function Player(){
-  const { currentChannel, videoRef, setIsPlaying } = usePlayer();
-  const [streamUrl, setStreamUrl] = useState(null);
-
-  useEffect(()=>{
-    setStreamUrl(null);
-    if(!currentChannel) return;
-    if(currentChannel.type==='youtube'){
-      requestStream(currentChannel.url).then(j=> setStreamUrl(j.streamUrl)).catch(()=> setStreamUrl(null));
-    } else {
-      setStreamUrl(currentChannel.url);
-    }
-  },[currentChannel]);
-
-  if(!currentChannel) return null;
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 w-96 h-60 card overflow-hidden">
-      <div className="p-2 bg-gradient-to-r from-[#0e141a] to-[#081018] flex justify-between items-center">
-        <div className="font-bold">{currentChannel.name}</div>
-        <button onClick={()=> setIsPlaying(false)} className="text-gray-400">✕</button>
+import React from 'react'
+import ReactPlayer from 'react-player'
+export default function Player({channel, onClose}){
+  if(!channel) return null;
+  if(channel.type==='youtube'){
+    const yt = channel.url;
+    return (
+      <div className="fixed bottom-4 left-4 z-50 w-96 h-56 bg-black border border-gray-800 rounded shadow-lg p-1">
+        <div className="p-2 bg-gray-900 text-sm flex justify-between"><div className="font-bold">YouTube channel</div><button onClick={onClose} className="text-gray-400">✕</button></div>
+        <div className="p-3 text-sm text-gray-400">This is a YouTube stream — it will open in a new tab when you click the 'Open' button.<div className="mt-2"><a className="text-blue-400" href={yt} target="_blank" rel="noopener noreferrer">Open on YouTube</a></div></div>
       </div>
-      <div className="h-full bg-black flex items-center justify-center">
-        {streamUrl ? (
-          <video ref={videoRef} key={streamUrl} src={streamUrl} controls autoPlay preload="auto" playsInline className="w-full h-full object-cover" onError={(e)=>{ try{ e.target.load(); }catch(err){} }} />
-        ) : (
-          <div className="text-gray-400">Preparing stream...</div>
-        )}
+    )
+  }
+  return (
+    <div className="fixed bottom-4 left-4 z-50 w-96 h-56 bg-black border border-gray-800 rounded shadow-lg overflow-hidden">
+      <div className="p-2 bg-gray-900 flex justify-between items-center text-sm"><div className="font-bold">Now Playing</div><button onClick={onClose} className="text-gray-400">✕</button></div>
+      <div className="h-full">
+        <ReactPlayer url={channel.url} playing controls width='100%' height='100%' />
       </div>
     </div>
   )
