@@ -1,4 +1,5 @@
 export async function loadChannels() {
+  // remote primary (raw GitHub) and local fallback
   const remote = 'https://raw.githubusercontent.com/solo12345689/gengas-garden/main/public/channels.json';
   try {
     const res = await fetch(remote, { cache: 'no-store' });
