@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: gengas-garden
-    env: docker
-    plan: free
-    autoDeploy: true

@@ -1,6 +1,0 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-html,body,#root{height:100%;}
-body{background:radial-gradient(ellipse at center,#000 0%, #06060a 40%, #0b0f15 100%); color:#e6eef8; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial}
-.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); box-shadow: 0 8px 30px rgba(2,8,20,0.6);}
