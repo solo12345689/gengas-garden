@@ -12,13 +12,11 @@ function colorFromString(str) {
 }
 
 export default function GlobeView({ onCountrySelect }) {
-  const globeRef = useRef(null);
   const containerRef = useRef();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const globe = Globe()(containerRef.current);
-    globeRef.current = globe;
     globe
       .backgroundColor("#01020A")
       .showGraticules(false)
@@ -37,19 +35,25 @@ export default function GlobeView({ onCountrySelect }) {
       });
 
     (async () => {
-      const res = await fetch("/world-110m.json");
-      const world = await res.json();
-      const countries = topojson.feature(world, world.objects.countries).features;
+      try {
+        const res = await fetch("/world-110m.json");
+        const world = await res.json();
 
-      // Assign colors
-      countries.forEach((c) => {
-        c.properties.color = colorFromString(c.id || c.properties.name);
-      });
+        // find the correct object key
+        const objectKey = Object.keys(world.objects)[0];
+        const countries = topojson.feature(world, world.objects[objectKey]).features;
 
-      globe.polygonsData(countries);
-      globe.controls().autoRotate = true;
-      globe.controls().autoRotateSpeed = 0.4;
-      setLoading(false);
+        countries.forEach((c) => {
+          c.properties.color = colorFromString(c.id || c.properties.name);
+        });
+
+        globe.polygonsData(countries);
+        globe.controls().autoRotate = true;
+        globe.controls().autoRotateSpeed = 0.4;
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to load world map:", err);
+      }
     })();
   }, [onCountrySelect]);
 
