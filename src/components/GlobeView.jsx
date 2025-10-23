@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { feature } from "topojson-client";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { loadChannels } from "../utils/fetchChannels";
 
 const GlobeView = () => {
   const mountRef = useRef(null);
@@ -13,7 +14,7 @@ const GlobeView = () => {
     let scene, camera, renderer, globe, raycaster, mouse, controls;
     const mount = mountRef.current;
 
-    // --- SCENE SETUP ---
+    // Scene setup
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(
       45,
@@ -28,13 +29,13 @@ const GlobeView = () => {
     renderer.setPixelRatio(window.devicePixelRatio);
     mount.appendChild(renderer.domElement);
 
-    // --- LIGHTS ---
+    // Lighting
     scene.add(new THREE.AmbientLight(0xffffff, 1.2));
     const light = new THREE.PointLight(0xffffff, 0.8);
     camera.add(light);
     scene.add(camera);
 
-    // --- BASE GLOBE ---
+    // Globe base
     const globeGeometry = new THREE.SphereGeometry(1, 64, 64);
     const globeMaterial = new THREE.MeshPhongMaterial({
       color: 0x001244,
@@ -46,7 +47,7 @@ const GlobeView = () => {
     globe = new THREE.Mesh(globeGeometry, globeMaterial);
     scene.add(globe);
 
-    // --- CONTROLS (USER ROTATION ENABLED) ---
+    // OrbitControls — user can rotate manually
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.enableZoom = true;
@@ -56,11 +57,11 @@ const GlobeView = () => {
     controls.minDistance = 1.3;
     controls.maxDistance = 3.5;
 
-    // --- COUNTRY DATA ---
     const countryMeshes = new Map();
     raycaster = new THREE.Raycaster();
     mouse = new THREE.Vector2();
 
+    // Load world data
     fetch("/world-110m.json")
       .then((res) => res.json())
       .then((data) => {
@@ -107,13 +108,14 @@ const GlobeView = () => {
       })
       .catch((err) => console.error("Failed to load world map:", err));
 
-    // --- CHANNEL DATA ---
-    fetch("/channels.json")
-      .then((res) => res.json())
-      .then((data) => setAllChannels(data))
+    // Load channel data (via fetchChannels.js)
+    loadChannels()
+      .then((data) => {
+        if (data) setAllChannels(data);
+      })
       .catch((err) => console.error("Failed to load channels:", err));
 
-    // --- CLICK TO SELECT COUNTRY ---
+    // Click to select country
     const onClick = (event) => {
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -134,7 +136,7 @@ const GlobeView = () => {
 
     renderer.domElement.addEventListener("click", onClick);
 
-    // --- ANIMATION LOOP ---
+    // Animation
     const animate = () => {
       requestAnimationFrame(animate);
       controls.update();
@@ -142,7 +144,6 @@ const GlobeView = () => {
     };
     animate();
 
-    // --- RESIZE HANDLER ---
     const handleResize = () => {
       camera.aspect = mount.clientWidth / mount.clientHeight;
       camera.updateProjectionMatrix();
@@ -251,4 +252,3 @@ const GlobeView = () => {
 };
 
 export default GlobeView;
-
