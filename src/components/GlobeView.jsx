@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { feature } from "topojson-client";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 const GlobeView = () => {
   const mountRef = useRef(null);
 
   useEffect(() => {
-    let scene, camera, renderer, globe, edges;
+    let scene, camera, renderer, globe, edges, controls;
     const mount = mountRef.current;
 
     // --- SCENE SETUP ---
@@ -17,7 +18,7 @@ const GlobeView = () => {
       0.1,
       1000
     );
-    camera.position.z = 2.5;
+    camera.position.z = 2.3;
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(mount.clientWidth, mount.clientHeight);
@@ -25,25 +26,34 @@ const GlobeView = () => {
     mount.appendChild(renderer.domElement);
 
     // --- LIGHTING ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-    scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 0.7);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+    const pointLight = new THREE.PointLight(0xffffff, 0.8);
     camera.add(pointLight);
     scene.add(camera);
 
-    // --- GLOBE SPHERE ---
+    // --- BASE GLOBE ---
     const globeGeometry = new THREE.SphereGeometry(1, 64, 64);
     const globeMaterial = new THREE.MeshPhongMaterial({
-      color: 0x112244,
+      color: 0x001244,
       emissive: 0x000033,
-      shininess: 10,
+      shininess: 15,
       transparent: true,
       opacity: 0.95,
     });
     globe = new THREE.Mesh(globeGeometry, globeMaterial);
     scene.add(globe);
 
-    // --- COUNTRY LINES ---
+    // --- CONTROLS ---
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.enableZoom = true;
+    controls.rotateSpeed = 0.5;
+    controls.zoomSpeed = 0.6;
+    controls.enablePan = false;
+    controls.minDistance = 1.3;
+    controls.maxDistance = 3.5;
+
+    // --- COUNTRY BORDERS ---
     fetch("/world-110m.json")
       .then((res) => res.json())
       .then((data) => {
@@ -52,15 +62,10 @@ const GlobeView = () => {
 
         countries.features.forEach((country) => {
           let coords = country.geometry.coordinates;
-
-          // Normalize both Polygon & MultiPolygon
-          if (country.geometry.type === "Polygon") {
-            coords = [coords];
-          }
+          if (country.geometry.type === "Polygon") coords = [coords];
 
           coords.forEach((polygonGroup) => {
             polygonGroup.forEach((polygon) => {
-              // Safeguard for missing nested arrays
               const safePoly = Array.isArray(polygon[0])
                 ? polygon
                 : polygonGroup;
@@ -75,13 +80,13 @@ const GlobeView = () => {
               });
 
               const geometry = new THREE.BufferGeometry().setFromPoints(points);
-              const randomColor = new THREE.Color(
-                `hsl(${Math.random() * 360}, 70%, 60%)`
+              const color = new THREE.Color(
+                `hsl(${Math.random() * 360}, 80%, 60%)`
               );
               const material = new THREE.LineBasicMaterial({
-                color: randomColor,
+                color,
                 transparent: true,
-                opacity: 0.7,
+                opacity: 0.8,
               });
               const line = new THREE.Line(geometry, material);
               edges.add(line);
@@ -90,31 +95,13 @@ const GlobeView = () => {
         });
 
         scene.add(edges);
-        fadeIn();
       })
       .catch((err) => console.error("Failed to load world map:", err));
 
     // --- ANIMATION LOOP ---
-    let opacity = 0;
-    const fadeIn = () => {
-      const fadeInterval = setInterval(() => {
-        if (opacity >= 1) {
-          clearInterval(fadeInterval);
-        } else {
-          opacity += 0.02;
-          scene.traverse((child) => {
-            if (child.material && child.material.opacity !== undefined) {
-              child.material.opacity = Math.min(1, opacity);
-            }
-          });
-        }
-      }, 30);
-    };
-
     const animate = () => {
       requestAnimationFrame(animate);
-      globe.rotation.y += 0.001;
-      if (edges) edges.rotation.y += 0.001;
+      controls.update();
       renderer.render(scene, camera);
     };
     animate();
@@ -140,7 +127,7 @@ const GlobeView = () => {
       style={{
         width: "100%",
         height: "100vh",
-        background: "radial-gradient(ellipse at center, #0a0f25, #000000)",
+        background: "radial-gradient(ellipse at center, #060b1a, #000)",
         overflow: "hidden",
       }}
     >
@@ -153,9 +140,22 @@ const GlobeView = () => {
           fontFamily: "Poppins, sans-serif",
           fontSize: "1.2rem",
           letterSpacing: "0.05em",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
         }}
       >
-        🌎 GlobeView
+        <span
+          style={{
+            display: "inline-block",
+            width: "12px",
+            height: "12px",
+            borderRadius: "50%",
+            backgroundColor: "#4ade80",
+            boxShadow: "0 0 6px #4ade80",
+          }}
+        ></span>
+        <b>Gengas TV</b>
       </div>
     </div>
   );
