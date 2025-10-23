@@ -1,107 +1,71 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { feature } from "topojson-client";
 
-export default function GlobeView() {
-  const globeRef = useRef();
-  const [time, setTime] = useState(new Date());
-
-  // Update clock every second
-  useEffect(() => {
-    const interval = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+const GlobeView = () => {
+  const mountRef = useRef(null);
 
   useEffect(() => {
-    let scene, camera, renderer, globe, atmosphere, frameId;
-    const container = globeRef.current;
+    let scene, camera, renderer, globe, edges;
+    const mount = mountRef.current;
 
-    // === Scene & Camera ===
+    // --- SCENE SETUP ---
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(
-      50,
-      container.clientWidth / container.clientHeight,
+      45,
+      mount.clientWidth / mount.clientHeight,
       0.1,
       1000
     );
-    camera.position.z = 2.2;
+    camera.position.z = 2.5;
 
-    // === Renderer ===
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setSize(mount.clientWidth, mount.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
-    container.appendChild(renderer.domElement);
+    mount.appendChild(renderer.domElement);
 
-    // === Lighting ===
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(5, 3, 5);
-    scene.add(ambientLight, directionalLight);
+    // --- LIGHTING ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0xffffff, 0.7);
+    camera.add(pointLight);
+    scene.add(camera);
 
-    // === Globe ===
-    const geometry = new THREE.SphereGeometry(1, 64, 64);
-    const material = new THREE.MeshPhongMaterial({
-      color: 0x0066ff,
-      emissive: 0x0a0a2a,
-      shininess: 15,
+    // --- GLOBE SPHERE ---
+    const globeGeometry = new THREE.SphereGeometry(1, 64, 64);
+    const globeMaterial = new THREE.MeshPhongMaterial({
+      color: 0x112244,
+      emissive: 0x000033,
+      shininess: 10,
       transparent: true,
-      opacity: 0,
+      opacity: 0.95,
     });
-    globe = new THREE.Mesh(geometry, material);
+    globe = new THREE.Mesh(globeGeometry, globeMaterial);
     scene.add(globe);
 
-    // === Atmosphere Glow ===
-    const atmosphereGeometry = new THREE.SphereGeometry(1.05, 64, 64);
-    const atmosphereMaterial = new THREE.ShaderMaterial({
-      vertexShader: `
-        varying vec3 vNormal;
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vNormal;
-        void main() {
-          float intensity = pow(0.8 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 4.0);
-          gl_FragColor = vec4(0.2, 0.5, 1.0, 1.0) * intensity;
-        }
-      `,
-      blending: THREE.AdditiveBlending,
-      side: THREE.BackSide,
-      transparent: true,
-    });
-    atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-    atmosphere.scale.set(1.05, 1.05, 1.05);
-    scene.add(atmosphere);
-
-    // === Fade-in Animation ===
-    const fadeIn = () => {
-      let opacity = 0;
-      const fade = () => {
-        opacity += 0.02;
-        material.opacity = opacity;
-        if (opacity < 1) requestAnimationFrame(fade);
-      };
-      fade();
-    };
-
-    // === Load World Data ===
+    // --- COUNTRY LINES ---
     fetch("/world-110m.json")
       .then((res) => res.json())
       .then((data) => {
         const countries = feature(data, data.objects.countries);
-        const edges = new THREE.Group();
-        const lineMaterial = new THREE.LineBasicMaterial({
-          color: 0xffffff,
-          transparent: true,
-          opacity: 0.4,
-        });
+        edges = new THREE.Group();
 
         countries.features.forEach((country) => {
-          country.geometry.coordinates.forEach((multiPolygon) => {
-            multiPolygon.forEach((polygon) => {
-              const points = polygon.map(([lon, lat]) => {
+          let coords = country.geometry.coordinates;
+
+          // Normalize both Polygon & MultiPolygon
+          if (country.geometry.type === "Polygon") {
+            coords = [coords];
+          }
+
+          coords.forEach((polygonGroup) => {
+            polygonGroup.forEach((polygon) => {
+              // Safeguard for missing nested arrays
+              const safePoly = Array.isArray(polygon[0])
+                ? polygon
+                : polygonGroup;
+
+              const points = safePoly.map(([lon, lat]) => {
                 const phi = (90 - lat) * (Math.PI / 180);
                 const theta = (lon + 180) * (Math.PI / 180);
                 const x = -Math.sin(phi) * Math.cos(theta);
@@ -109,8 +73,17 @@ export default function GlobeView() {
                 const z = Math.sin(phi) * Math.sin(theta);
                 return new THREE.Vector3(x, y, z);
               });
-              const geo = new THREE.BufferGeometry().setFromPoints(points);
-              const line = new THREE.Line(geo, lineMaterial);
+
+              const geometry = new THREE.BufferGeometry().setFromPoints(points);
+              const randomColor = new THREE.Color(
+                `hsl(${Math.random() * 360}, 70%, 60%)`
+              );
+              const material = new THREE.LineBasicMaterial({
+                color: randomColor,
+                transparent: true,
+                opacity: 0.7,
+              });
+              const line = new THREE.Line(geometry, material);
               edges.add(line);
             });
           });
@@ -121,63 +94,71 @@ export default function GlobeView() {
       })
       .catch((err) => console.error("Failed to load world map:", err));
 
-    // === Animation Loop ===
+    // --- ANIMATION LOOP ---
+    let opacity = 0;
+    const fadeIn = () => {
+      const fadeInterval = setInterval(() => {
+        if (opacity >= 1) {
+          clearInterval(fadeInterval);
+        } else {
+          opacity += 0.02;
+          scene.traverse((child) => {
+            if (child.material && child.material.opacity !== undefined) {
+              child.material.opacity = Math.min(1, opacity);
+            }
+          });
+        }
+      }, 30);
+    };
+
     const animate = () => {
-      frameId = requestAnimationFrame(animate);
-      globe.rotation.y += 0.0015;
-      atmosphere.rotation.y += 0.001;
+      requestAnimationFrame(animate);
+      globe.rotation.y += 0.001;
+      if (edges) edges.rotation.y += 0.001;
       renderer.render(scene, camera);
     };
     animate();
 
-    // === Resize ===
+    // --- RESIZE HANDLER ---
     const handleResize = () => {
-      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.aspect = mount.clientWidth / mount.clientHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setSize(mount.clientWidth, mount.clientHeight);
     };
     window.addEventListener("resize", handleResize);
 
-    // === Cleanup ===
+    // --- CLEANUP ---
     return () => {
-      cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleResize);
-      container.removeChild(renderer.domElement);
+      mount.removeChild(renderer.domElement);
     };
   }, []);
 
-  // Format clock
-  const formattedTime = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  const formattedDate = time.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
-
   return (
     <div
-      ref={globeRef}
+      ref={mountRef}
       style={{
-        width: "100vw",
+        width: "100%",
         height: "100vh",
-        background: "radial-gradient(circle at 50% 50%, #000022, #000010)",
+        background: "radial-gradient(ellipse at center, #0a0f25, #000000)",
         overflow: "hidden",
       }}
     >
-      {/* Floating Clock Overlay */}
       <div
         style={{
           position: "absolute",
-          top: "30px",
-          right: "40px",
-          color: "#99ccff",
+          top: "20px",
+          left: "20px",
+          color: "#fff",
+          fontFamily: "Poppins, sans-serif",
           fontSize: "1.2rem",
-          fontFamily: "Orbitron, monospace",
-          textShadow: "0 0 8px #00aaff, 0 0 16px #0044ff",
-          userSelect: "none",
-          textAlign: "right",
-          animation: "fadeIn 1.5s ease-in",
+          letterSpacing: "0.05em",
         }}
       >
-        <div>{formattedDate}</div>
-        <div style={{ fontSize: "1.8rem", marginTop: "4px" }}>{formattedTime}</div>
+        🌎 GlobeView
       </div>
     </div>
   );
-}
+};
+
+export default GlobeView;
