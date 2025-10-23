@@ -1,42 +1,81 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { feature } from "topojson-client";
 
 export default function GlobeView() {
   const globeRef = useRef();
+  const [time, setTime] = useState(new Date());
+
+  // Update clock every second
+  useEffect(() => {
+    const interval = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
-    let scene, camera, renderer, globe, frameId;
+    let scene, camera, renderer, globe, atmosphere, frameId;
     const container = globeRef.current;
 
-    // Scene setup
+    // === Scene & Camera ===
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(
+      50,
+      container.clientWidth / container.clientHeight,
+      0.1,
+      1000
+    );
     camera.position.z = 2.2;
 
+    // === Renderer ===
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    // === Lighting ===
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(5, 3, 5);
     scene.add(ambientLight, directionalLight);
 
-    // Globe geometry & material
+    // === Globe ===
     const geometry = new THREE.SphereGeometry(1, 64, 64);
     const material = new THREE.MeshPhongMaterial({
-      color: 0x0044ff,
-      emissive: 0x111133,
+      color: 0x0066ff,
+      emissive: 0x0a0a2a,
       shininess: 15,
       transparent: true,
-      opacity: 0
+      opacity: 0,
     });
     globe = new THREE.Mesh(geometry, material);
     scene.add(globe);
 
-    // Smooth fade-in after globe loads
+    // === Atmosphere Glow ===
+    const atmosphereGeometry = new THREE.SphereGeometry(1.05, 64, 64);
+    const atmosphereMaterial = new THREE.ShaderMaterial({
+      vertexShader: `
+        varying vec3 vNormal;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vNormal;
+        void main() {
+          float intensity = pow(0.8 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 4.0);
+          gl_FragColor = vec4(0.2, 0.5, 1.0, 1.0) * intensity;
+        }
+      `,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+      transparent: true,
+    });
+    atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+    atmosphere.scale.set(1.05, 1.05, 1.05);
+    scene.add(atmosphere);
+
+    // === Fade-in Animation ===
     const fadeIn = () => {
       let opacity = 0;
       const fade = () => {
@@ -47,14 +86,17 @@ export default function GlobeView() {
       fade();
     };
 
-    // Load world map data
+    // === Load World Data ===
     fetch("/world-110m.json")
       .then((res) => res.json())
       .then((data) => {
         const countries = feature(data, data.objects.countries);
         const edges = new THREE.Group();
-
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+        const lineMaterial = new THREE.LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.4,
+        });
 
         countries.features.forEach((country) => {
           country.geometry.coordinates.forEach((multiPolygon) => {
@@ -79,15 +121,16 @@ export default function GlobeView() {
       })
       .catch((err) => console.error("Failed to load world map:", err));
 
-    // Animation loop
+    // === Animation Loop ===
     const animate = () => {
       frameId = requestAnimationFrame(animate);
-      globe.rotation.y += 0.002;
+      globe.rotation.y += 0.0015;
+      atmosphere.rotation.y += 0.001;
       renderer.render(scene, camera);
     };
     animate();
 
-    // Handle resize
+    // === Resize ===
     const handleResize = () => {
       camera.aspect = container.clientWidth / container.clientHeight;
       camera.updateProjectionMatrix();
@@ -95,13 +138,17 @@ export default function GlobeView() {
     };
     window.addEventListener("resize", handleResize);
 
-    // Cleanup
+    // === Cleanup ===
     return () => {
       cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleResize);
       container.removeChild(renderer.domElement);
     };
-  }, []); // ✅ Runs only once — no restart on click
+  }, []);
+
+  // Format clock
+  const formattedTime = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const formattedDate = time.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
 
   return (
     <div
@@ -109,9 +156,28 @@ export default function GlobeView() {
       style={{
         width: "100vw",
         height: "100vh",
-        background: "radial-gradient(circle at 50% 50%, #000020, #000010)",
+        background: "radial-gradient(circle at 50% 50%, #000022, #000010)",
         overflow: "hidden",
       }}
-    />
+    >
+      {/* Floating Clock Overlay */}
+      <div
+        style={{
+          position: "absolute",
+          top: "30px",
+          right: "40px",
+          color: "#99ccff",
+          fontSize: "1.2rem",
+          fontFamily: "Orbitron, monospace",
+          textShadow: "0 0 8px #00aaff, 0 0 16px #0044ff",
+          userSelect: "none",
+          textAlign: "right",
+          animation: "fadeIn 1.5s ease-in",
+        }}
+      >
+        <div>{formattedDate}</div>
+        <div style={{ fontSize: "1.8rem", marginTop: "4px" }}>{formattedTime}</div>
+      </div>
+    </div>
   );
 }
