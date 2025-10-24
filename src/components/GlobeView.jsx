@@ -15,7 +15,7 @@ export default function GlobeView() {
   useEffect(() => {
     async function init() {
       try {
-        const res = await fetch("/world-110m.json");
+        const res = await fetch("/world-110m.json", { cache: "no-store" });
         const world = await res.json();
         const features = topojson.feature(world, world.objects.countries).features;
         setCountries(features);
