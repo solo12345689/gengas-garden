@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { Globe } from "react-globe.gl";
+import Globe from "react-globe.gl";
 import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
