@@ -1,102 +1,76 @@
 import React, { useEffect, useRef, useState } from "react";
 import Globe from "react-globe.gl";
+import * as topojson from "topojson-client";
 import * as THREE from "three";
+import { loadChannels } from "../utils/fetchChannels";
 
-const GengasTV = () => {
+export default function GengasTV() {
   const globeRef = useRef();
-  const [countries, setCountries] = useState({ features: [] });
+  const [worldData, setWorldData] = useState(null);
   const [channels, setChannels] = useState({});
   const [hoverCountry, setHoverCountry] = useState(null);
 
+  // 🌍 Load world map
   useEffect(() => {
-    // Load countries geometry (TopoJSON)
     fetch("/world-110m.json")
       .then((res) => res.json())
-      .then((worldData) => {
-        const countries = window.topojson.feature(
-          worldData,
-          worldData.objects.countries
-        );
-        setCountries(countries);
-      });
-
-    // Load channels data
-    fetch("/channels.json")
-      .then((res) => res.json())
-      .then((data) => setChannels(data));
+      .then((topo) => {
+        if (topo.objects && topo.objects.countries) {
+          const geoJson = topojson.feature(topo, topo.objects.countries);
+          setWorldData(geoJson);
+        } else {
+          console.error("Invalid world data format", topo);
+        }
+      })
+      .catch((err) => console.error("Failed to load world map:", err));
   }, []);
 
-  // Random color per country
-  const getCountryColor = (country) => {
-    if (hoverCountry && hoverCountry.properties.name === country.properties.name)
-      return "#ffcc00"; // highlight color
-    const rand = Math.floor(Math.random() * 360);
-    return `hsl(${rand}, 70%, 50%)`;
+  // 📺 Load channel list
+  useEffect(() => {
+    (async () => {
+      const data = await loadChannels();
+      if (data) setChannels(data);
+    })();
+  }, []);
+
+  // 🌈 Bright colorful material for countries
+  const getCountryColor = (iso) => {
+    if (hoverCountry && hoverCountry === iso) return "#ffffff";
+    // Assign each country a random bright color for visual variety
+    const hue = (iso.charCodeAt(0) * 37) % 360;
+    return `hsl(${hue}, 85%, 55%)`;
   };
 
-  useEffect(() => {
-    if (!globeRef.current) return;
-    const controls = globeRef.current.controls();
-    controls.autoRotate = false; // Manual rotation only
-    controls.enableZoom = true;
-  }, [countries]);
-
   return (
-    <div style={{ background: "radial-gradient(circle, #00111a, #000)", height: "100vh" }}>
-      <Globe
-        ref={globeRef}
-        globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-        bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-        backgroundColor="rgba(0,0,0,0)"
-        polygonsData={countries.features}
-        polygonCapColor={getCountryColor}
-        polygonSideColor={() => "rgba(0, 100, 255, 0.15)"}
-        polygonStrokeColor={() => "#111"}
-        onPolygonHover={setHoverCountry}
-        polygonsTransitionDuration={200}
-      />
-
-      {hoverCountry && (
-        <div
-          style={{
-            position: "absolute",
-            top: 20,
-            right: 20,
-            background: "rgba(0,0,0,0.8)",
-            color: "#fff",
-            padding: "10px 15px",
-            borderRadius: "12px",
-            width: "250px",
-            fontSize: "14px",
+    <div style={{ background: "radial-gradient(#0a0015, #000)", height: "100vh" }}>
+      {worldData ? (
+        <Globe
+          ref={globeRef}
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+          polygonsData={worldData.features}
+          polygonCapColor={(feat) => getCountryColor(feat.id)}
+          polygonSideColor={() => "rgba(0, 0, 0, 0.2)"}
+          polygonStrokeColor={() => "#111"}
+          onPolygonHover={(feat) => setHoverCountry(feat ? feat.id : null)}
+          onPolygonClick={(feat) => {
+            const countryCode = feat.id;
+            const country = channels[countryCode];
+            if (country && country.channels?.length > 0) {
+              const ch = country.channels[0];
+              window.open(ch.url, "_blank");
+            } else {
+              alert(`No channels found for ${countryCode}`);
+            }
           }}
-        >
-          <h3>{hoverCountry.properties.name}</h3>
-          <div>
-            {channels[hoverCountry.properties.ISO_A2] ? (
-              <ul style={{ paddingLeft: "20px" }}>
-                {channels[hoverCountry.properties.ISO_A2].channels.map(
-                  (ch, i) => (
-                    <li key={i}>
-                      <a
-                        href={ch.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: "#00ccff" }}
-                      >
-                        {ch.name}
-                      </a>
-                    </li>
-                  )
-                )}
-              </ul>
-            ) : (
-              <p>No channels available</p>
-            )}
-          </div>
+          backgroundColor="rgba(0,0,0,0)"
+          showAtmosphere={false}
+          polygonsTransitionDuration={300}
+        />
+      ) : (
+        <div style={{ color: "white", textAlign: "center", paddingTop: "40vh" }}>
+          Loading Gengas TV Globe...
         </div>
       )}
     </div>
   );
-};
-
-export default GengasTV;
+}
