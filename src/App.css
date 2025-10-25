@@ -1,0 +1,9 @@
+/* src/App.css */
+.App {
+  text-align: center;
+  background-color: #000;
+  color: white;
+  height: 100vh;
+  overflow: hidden;
+  font-family: "Poppins", sans-serif;
+}
