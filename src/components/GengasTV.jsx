@@ -11,19 +11,19 @@ export default function GengasTV() {
   const [hoverCountry, setHoverCountry] = useState(null);
 
   // 🌍 Load world map
-  useEffect(() => {
-    fetch("/world-110m.json")
-      .then((res) => res.json())
-      .then((topo) => {
-        if (topo.objects && topo.objects.countries) {
-          const geoJson = topojson.feature(topo, topo.objects.countries);
-          setWorldData(geoJson);
-        } else {
-          console.error("Invalid world data format", topo);
-        }
-      })
-      .catch((err) => console.error("Failed to load world map:", err));
-  }, []);
+ useEffect(() => {
+  fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+    .then((res) => res.json())
+    .then((topo) => {
+      if (topo.objects && topo.objects.countries) {
+        const geoJson = topojson.feature(topo, topo.objects.countries);
+        setWorldData(geoJson);
+      } else {
+        console.error("Invalid world data format", topo);
+      }
+    })
+    .catch((err) => console.error("Failed to load world map:", err));
+}, []);
 
   // 📺 Load channel list
   useEffect(() => {
