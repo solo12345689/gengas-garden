@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import GlobeView from "./components/GlobeView";
+import GengasTV from "./components/GengasTV";
 import ChannelsPanel from "./components/ChannelsPanel";
 
 export default function App() {
