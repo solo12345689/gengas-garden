@@ -46,22 +46,23 @@ export default function GengasTV() {
 
   // 🧭 When country is clicked
   const handleCountryClick = (polygon) => {
-    const countryCode = polygon?.properties?.iso_a2 || polygon.id;
-    const matchKey = Object.keys(channels).find(
-      (key) => key.toUpperCase() === countryCode?.toUpperCase()
-    );
+  const countryCode = polygon?.properties?.iso_a2 || polygon.id;
+  const matchKey = Object.keys(channels).find(
+    (key) => key.toUpperCase() === countryCode?.toUpperCase()
+  );
 
-    if (matchKey) {
-      setSelectedCountry({
-        code: matchKey,
-        name: polygon.properties.name,
-        channels: channels[matchKey],
-      });
-    } else {
-      console.warn("No channels found for", countryCode);
-      setSelectedCountry(null);
-    }
-  };
+  if (matchKey) {
+    const countryData = channels[matchKey];
+    setSelectedCountry({
+      code: matchKey,
+      name: countryData.name || polygon.properties.name,
+      channels: countryData.channels || [],
+    });
+  } else {
+    console.warn("No channels found for", countryCode);
+    setSelectedCountry(null);
+  }
+};
 
   return (
     <div style={{ position: "relative", height: "100vh", background: "#000" }}>
