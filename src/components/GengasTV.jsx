@@ -1,76 +1,117 @@
 import React, { useEffect, useRef, useState } from "react";
 import Globe from "react-globe.gl";
 import * as topojson from "topojson-client";
-import * as THREE from "three";
 import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
   const globeRef = useRef();
-  const [worldData, setWorldData] = useState(null);
+  const [countries, setCountries] = useState([]);
   const [channels, setChannels] = useState({});
-  const [hoverCountry, setHoverCountry] = useState(null);
+  const [selectedCountry, setSelectedCountry] = useState(null);
 
-  // 🌍 Load world map
- useEffect(() => {
-  fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
-    .then((res) => res.json())
-    .then((topo) => {
-      if (topo.objects && topo.objects.countries) {
-        const geoJson = topojson.feature(topo, topo.objects.countries);
-        setWorldData(geoJson);
-      } else {
-        console.error("Invalid world data format", topo);
-      }
-    })
-    .catch((err) => console.error("Failed to load world map:", err));
-}, []);
-
-  // 📺 Load channel list
+  // Load world map and channels
   useEffect(() => {
-    (async () => {
-      const data = await loadChannels();
-      if (data) setChannels(data);
-    })();
+    async function loadData() {
+      try {
+        const res = await fetch("/world-110m.json");
+        const worldData = await res.json();
+
+        if (!worldData.objects || !worldData.objects.countries) {
+          console.error("Invalid world data format", worldData);
+          return;
+        }
+
+        const countriesData = topojson.feature(worldData, worldData.objects.countries).features;
+        setCountries(countriesData);
+
+        const channelData = await loadChannels();
+        setChannels(channelData || {});
+      } catch (err) {
+        console.error("Failed to load data", err);
+      }
+    }
+    loadData();
   }, []);
 
-  // 🌈 Bright colorful material for countries
-  const getCountryColor = (iso) => {
-    if (hoverCountry && hoverCountry === iso) return "#ffffff";
-    // Assign each country a random bright color for visual variety
-    const hue = (iso.charCodeAt(0) * 37) % 360;
-    return `hsl(${hue}, 85%, 55%)`;
-  };
+  // Random color per country
+  const getCountryColor = (d) =>
+    `hsl(${Math.random() * 360}, 80%, 60%)`;
 
   return (
-    <div style={{ background: "radial-gradient(#0a0015, #000)", height: "100vh" }}>
-      {worldData ? (
-        <Globe
-          ref={globeRef}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
-          polygonsData={worldData.features}
-          polygonCapColor={(feat) => getCountryColor(feat.id)}
-          polygonSideColor={() => "rgba(0, 0, 0, 0.2)"}
-          polygonStrokeColor={() => "#111"}
-          onPolygonHover={(feat) => setHoverCountry(feat ? feat.id : null)}
-          onPolygonClick={(feat) => {
-            const countryCode = feat.id;
-            const country = channels[countryCode];
-            if (country && country.channels?.length > 0) {
-              const ch = country.channels[0];
-              window.open(ch.url, "_blank");
-            } else {
-              alert(`No channels found for ${countryCode}`);
-            }
-          }}
-          backgroundColor="rgba(0,0,0,0)"
-          showAtmosphere={false}
-          polygonsTransitionDuration={300}
-        />
-      ) : (
-        <div style={{ color: "white", textAlign: "center", paddingTop: "40vh" }}>
-          Loading Gengas TV Globe...
-        </div>
-      )}
+    <div style={{ height: "100vh", width: "100vw", background: "#000", overflow: "hidden" }}>
+      {/* Header */}
+      <div style={{
+        position: "absolute",
+        top: 20,
+        left: 20,
+        color: "#00ffff",
+        fontFamily: "Poppins, sans-serif",
+        fontSize: "1.5rem",
+        fontWeight: "bold",
+        display: "flex",
+        alignItems: "center",
+        gap: "0.4rem",
+      }}>
+        🌐 Gengas TV
+      </div>
+
+      {/* Right Sidebar */}
+      <div style={{
+        position: "absolute",
+        top: 70,
+        right: 20,
+        width: "280px",
+        height: "85vh",
+        background: "rgba(0, 0, 0, 0.6)",
+        borderRadius: "10px",
+        color: "#fff",
+        padding: "15px",
+        overflowY: "auto"
+      }}>
+        <h3 style={{ marginBottom: "10px", color: "#0ff" }}>Select a Country</h3>
+        {selectedCountry ? (
+          <>
+            <h4>{selectedCountry}</h4>
+            {channels[selectedCountry]?.channels?.length ? (
+              <ul>
+                {channels[selectedCountry].channels.map((ch, i) => (
+                  <li key={i} style={{ marginBottom: "10px" }}>
+                    <strong>{ch.name}</strong> <br />
+                    <small>{ch.type}</small>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No channels available</p>
+            )}
+          </>
+        ) : (
+          <p>Click on the globe to select</p>
+        )}
+      </div>
+
+      {/* Globe */}
+      <Globe
+        ref={globeRef}
+        globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+        backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+        polygonsData={countries}
+        polygonCapColor={getCountryColor}
+        polygonSideColor={() => "rgba(0, 100, 255, 0.15)"}
+        polygonStrokeColor={() => "#111"}
+        onPolygonClick={(polygon) => {
+          const countryCode = polygon.id;
+          const match = Object.keys(channels).find(
+            (key) => key.toUpperCase() === countryCode?.toUpperCase()
+          );
+          setSelectedCountry(match || null);
+        }}
+        polygonsTransitionDuration={300}
+        showGlobe={true}
+        showAtmosphere={true}
+        atmosphereColor="deepskyblue"
+        atmosphereAltitude={0.25}
+      />
     </div>
   );
 }
