@@ -10,55 +10,52 @@ export default function GengasTV() {
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [currentChannel, setCurrentChannel] = useState(null);
-  const [hoverD, setHoverD] = useState();
+  const [loading, setLoading] = useState(true);
 
-  // 🗺️ Load world map & channels
+  // Load world map + channels
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/world-110m.json");
-        const world = await res.json();
-        const features = topojson.feature(world, world.objects.countries)
-          .features;
-        setCountries(features);
+        const worldRes = await fetch("/world-110m.json");
+        const worldData = await worldRes.json();
 
-        const ch = await loadChannels();
-        setChannels(ch || {});
+        const countriesData = topojson.feature(worldData, worldData.objects.countries).features;
+        setCountries(countriesData);
+
+        const channelData = await loadChannels();
+        if (channelData) setChannels(channelData);
+
+        setLoading(false);
       } catch (err) {
-        console.error("Failed to load globe data:", err);
+        console.error("Error loading data:", err);
+        setLoading(false);
       }
     })();
   }, []);
 
-  // 🖱️ Handle country click
+  // Handle country click
   const handleClick = (country) => {
-    if (!country || !channels) return;
-    const countryName = country.properties.name;
-    console.log("Clicked country:", countryName);
+    const countryName = country?.properties?.name;
+    if (!countryName) return;
 
-    const channelData = Object.entries(channels).find(
+    console.log(`Clicked country: ${countryName}`);
+    const matched = Object.entries(channels).find(
       ([key]) => key.toLowerCase() === countryName.toLowerCase()
     )?.[1];
 
-    if (channelData && channelData.channels?.length > 0) {
-      setSelectedCountry({
-        name: countryName,
-        channels: channelData.channels,
-      });
-      setCurrentChannel(channelData.channels[0]);
+    if (matched && matched.channels?.length > 0) {
+      setSelectedCountry({ name: countryName, channels: matched.channels });
+      setCurrentChannel(matched.channels[0]);
     } else {
-      console.warn("No channels found for", countryName);
-      setSelectedCountry({
-        name: countryName,
-        channels: [],
-      });
+      setSelectedCountry({ name: countryName, channels: [] });
       setCurrentChannel(null);
     }
   };
 
-  // 📺 Play IPTV streams using HLS.js if needed
+  // Initialize HLS for IPTV channels
   useEffect(() => {
     if (!currentChannel || currentChannel.type !== "iptv") return;
+
     const video = document.getElementById("tv-player");
     if (!video) return;
 
@@ -66,10 +63,29 @@ export default function GengasTV() {
       const hls = new Hls();
       hls.loadSource(currentChannel.url);
       hls.attachMedia(video);
+      return () => hls.destroy();
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = currentChannel.url;
     }
   }, [currentChannel]);
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#000",
+          color: "#0ff",
+          fontSize: "1.5em",
+        }}
+      >
+        Loading Genga Garden TV...
+      </div>
+    );
+  }
 
   return (
     <div
@@ -77,45 +93,45 @@ export default function GengasTV() {
         display: "flex",
         height: "100vh",
         width: "100vw",
-        background: "radial-gradient(circle at center, #00111a 0%, #000 100%)",
+        background: "#000",
         color: "#fff",
       }}
     >
-      {/* 🌍 The Globe */}
       <div style={{ flex: 1 }}>
         <Globe
           ref={globeRef}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-          backgroundColor="rgba(0,0,0,0)"
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+          backgroundColor="#000"
           polygonsData={countries}
-          polygonCapColor={() => `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},0.8)`}
+          polygonCapColor={() =>
+            `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},0.8)`
+          }
           polygonSideColor={() => "rgba(0,0,0,0.15)"}
           polygonStrokeColor={() => "#111"}
           polygonLabel={({ properties: d }) => `${d.name}`}
           onPolygonClick={handleClick}
-          onPolygonHover={setHoverD}
           polygonsTransitionDuration={300}
+          atmosphereColor="#00ffff"
+          atmosphereAltitude={0.3}
         />
       </div>
 
-      {/* 📋 Sidebar for country channels */}
+      {/* Sidebar */}
       <div
         style={{
-          width: "380px",
+          width: "340px",
           background: "#0a0a0a",
           borderLeft: "2px solid #00ffcc",
           padding: "20px",
           overflowY: "auto",
-          fontFamily: "Arial, sans-serif",
         }}
       >
         <h1
           style={{
             textAlign: "center",
             color: "#00ffcc",
-            fontSize: "1.8em",
-            marginBottom: "15px",
+            fontSize: "1.4em",
+            marginBottom: "10px",
           }}
         >
           🌍 Genga Garden TV
@@ -123,16 +139,7 @@ export default function GengasTV() {
 
         {selectedCountry ? (
           <>
-            <h2
-              style={{
-                color: "#00ffff",
-                fontSize: "1.3em",
-                marginBottom: "10px",
-              }}
-            >
-              {selectedCountry.name}
-            </h2>
-
+            <h2 style={{ color: "#0ff" }}>{selectedCountry.name}</h2>
             {selectedCountry.channels.length > 0 ? (
               <>
                 <ul style={{ listStyle: "none", padding: 0 }}>
@@ -140,37 +147,36 @@ export default function GengasTV() {
                     <li
                       key={i}
                       style={{
-                        padding: "8px",
-                        margin: "5px 0",
                         background:
                           currentChannel?.name === ch.name
-                            ? "#00ffcc22"
+                            ? "#00ffcc33"
                             : "#111",
-                        borderRadius: "8px",
+                        margin: "8px 0",
+                        padding: "8px",
+                        borderRadius: "6px",
                         cursor: "pointer",
                       }}
                       onClick={() => setCurrentChannel(ch)}
                     >
                       <strong>{ch.name}</strong>
-                      <div style={{ fontSize: "0.85em", opacity: 0.7 }}>
+                      <div style={{ fontSize: "0.8em", opacity: 0.7 }}>
                         {ch.language?.toUpperCase() || ""}
                       </div>
                     </li>
                   ))}
                 </ul>
 
-                {/* Video Player */}
                 {currentChannel && (
-                  <div style={{ marginTop: "15px" }}>
+                  <div style={{ marginTop: "12px" }}>
                     {currentChannel.type === "youtube" ? (
                       <iframe
-                        title={currentChannel.name}
                         src={currentChannel.url}
                         width="100%"
                         height="200"
+                        title={currentChannel.name}
                         allowFullScreen
-                        style={{ border: "none", borderRadius: "8px" }}
-                      />
+                        style={{ borderRadius: "8px" }}
+                      ></iframe>
                     ) : (
                       <video
                         id="tv-player"
@@ -178,21 +184,18 @@ export default function GengasTV() {
                         autoPlay
                         width="100%"
                         height="200"
-                        style={{
-                          borderRadius: "8px",
-                          background: "#000",
-                        }}
+                        style={{ borderRadius: "8px" }}
                       />
                     )}
                   </div>
                 )}
               </>
             ) : (
-              <p>No channels available</p>
+              <p style={{ opacity: 0.7 }}>No channels available</p>
             )}
           </>
         ) : (
-          <p>Select a country to view its channels.</p>
+          <p style={{ opacity: 0.7 }}>Select a country to view channels</p>
         )}
       </div>
     </div>
