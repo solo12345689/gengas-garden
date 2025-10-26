@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Globe from "react-globe.gl";
 import * as topojson from "topojson-client";
-import * as THREE from "three";
+import Hls from "hls.js"; // for .m3u8 streaming
 import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
@@ -9,15 +9,16 @@ export default function GengasTV() {
   const [countries, setCountries] = useState([]);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
+  const [currentChannel, setCurrentChannel] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🎨 Generate consistent color per country
+  // 🌈 Generate colorful map like TV Garden
   const getRandomColor = (id) => {
-    const hue = (id * 45) % 360;
-    return `hsl(${hue}, 70%, 55%)`;
+    const hue = (id * 47) % 360;
+    return `hsl(${hue}, 80%, 55%)`;
   };
 
-  // 🌍 Load world map + channels
+  // 🌍 Load map + channels
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -38,23 +39,18 @@ export default function GengasTV() {
     loadData();
   }, []);
 
-  // 🖱️ Handle click (match ISO code properly)
+  // 🖱️ Handle click — correct ISO 2-letter mapping
   const handleClick = (f) => {
     if (!f) return;
-
-    const isoCode =
-      f.properties?.iso_a2?.toUpperCase() ||
-      f.properties?.iso_a3?.toUpperCase() ||
-      f.properties?.name?.toUpperCase();
-
+    const isoCode = f.properties?.iso_a2?.toUpperCase();
     console.log("Clicked country:", f.properties.name, "→", isoCode);
 
     const countryData =
       channels[isoCode] ||
       Object.values(channels).find(
         (c) =>
-          c.name?.toLowerCase() === f.properties.name?.toLowerCase() ||
-          c.code?.toUpperCase() === isoCode
+          c.code?.toUpperCase() === isoCode ||
+          c.name?.toLowerCase() === f.properties.name?.toLowerCase()
       );
 
     if (countryData && countryData.channels?.length) {
@@ -63,6 +59,7 @@ export default function GengasTV() {
         name: f.properties.name,
         channels: countryData.channels,
       });
+      setCurrentChannel(null);
     } else {
       console.warn("No match for", f.properties.name, isoCode);
       setSelectedCountry({
@@ -70,14 +67,30 @@ export default function GengasTV() {
         name: f.properties.name,
         channels: [],
       });
+      setCurrentChannel(null);
     }
   };
 
-  // 🌈 Country colors
-  const getCountryColor = (country) => {
-    const id = country.id || 0;
-    return getRandomColor(id);
+  // 🎥 Handle channel selection
+  const handlePlayChannel = (ch) => {
+    setCurrentChannel(ch);
   };
+
+  // 🔊 Initialize HLS player for .m3u8 streams
+  useEffect(() => {
+    if (currentChannel && currentChannel.type === "iptv" && currentChannel.url.endsWith(".m3u8")) {
+      const video = document.getElementById("livePlayer");
+      if (video) {
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(currentChannel.url);
+          hls.attachMedia(video);
+        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = currentChannel.url;
+        }
+      }
+    }
+  }, [currentChannel]);
 
   if (loading) {
     return (
@@ -89,7 +102,7 @@ export default function GengasTV() {
 
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden">
-      {/* 🌍 Interactive Globe */}
+      {/* 🌍 Colorful Globe */}
       <Globe
         ref={globeRef}
         width={window.innerWidth}
@@ -97,7 +110,7 @@ export default function GengasTV() {
         backgroundColor="rgba(0,0,0,1)"
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
         polygonsData={countries}
-        polygonCapColor={getCountryColor}
+        polygonCapColor={(d) => getRandomColor(d.id)}
         polygonSideColor={() => "rgba(255,255,255,0.05)"}
         polygonStrokeColor={() => "#111"}
         onPolygonClick={handleClick}
@@ -107,37 +120,58 @@ export default function GengasTV() {
         atmosphereAltitude={0.25}
       />
 
-      {/* 🌐 Gengas TV Title */}
+      {/* 🏷️ Title */}
       <div className="absolute top-5 left-5 text-4xl font-bold text-white drop-shadow-md">
         🌐 Gengas TV
       </div>
 
-      {/* 📺 Sidebar for country channels */}
+      {/* 📺 Sidebar */}
       {selectedCountry && (
-        <div className="absolute right-0 top-0 h-full w-80 bg-[#0b0b0b]/95 text-white p-5 overflow-y-auto border-l border-gray-800 shadow-lg">
+        <div className="absolute right-0 top-0 h-full w-96 bg-[#0b0b0b]/95 text-white p-5 overflow-y-auto border-l border-gray-800 shadow-lg">
           <h2 className="text-2xl font-semibold mb-4">
             {selectedCountry.name} ({selectedCountry.code})
           </h2>
 
+          {/* Embedded Player */}
+          {currentChannel && (
+            <div className="mb-4">
+              {currentChannel.type === "youtube" ? (
+                <iframe
+                  src={currentChannel.url}
+                  title={currentChannel.name}
+                  className="w-full h-48 rounded-md mb-2"
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                ></iframe>
+              ) : (
+                <video
+                  id="livePlayer"
+                  className="w-full h-48 rounded-md mb-2 bg-black"
+                  controls
+                  autoPlay
+                ></video>
+              )}
+              <h3 className="text-lg font-medium">{currentChannel.name}</h3>
+            </div>
+          )}
+
+          {/* Channel List */}
           {selectedCountry.channels.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {selectedCountry.channels.map((ch, i) => (
                 <div
                   key={i}
-                  className="p-3 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a] transition"
+                  className={`p-3 rounded-lg cursor-pointer transition ${
+                    currentChannel?.name === ch.name
+                      ? "bg-blue-600/60"
+                      : "bg-[#1a1a1a] hover:bg-[#2a2a2a]"
+                  }`}
+                  onClick={() => handlePlayChannel(ch)}
                 >
-                  <h3 className="font-medium text-lg">{ch.name}</h3>
-                  <p className="text-sm text-gray-400 mb-1">
+                  <h3 className="font-medium">{ch.name}</h3>
+                  <p className="text-xs text-gray-400">
                     {ch.language?.toUpperCase() || "Unknown"}
                   </p>
-                  <a
-                    href={ch.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 text-sm hover:underline"
-                  >
-                    ▶ Watch Channel
-                  </a>
                 </div>
               ))}
             </div>
