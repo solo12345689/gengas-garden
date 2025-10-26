@@ -37,42 +37,50 @@ export default function GengasTV() {
       setLoading(false);
     })();
   }, []);
+// Click handler (ignore duplicate selections)
+const handleClick = (feat) => {
+  if (!feat || !channels) return;
 
-  // Click country handler (works with both ISO or full names)
-  const handleClick = (feat) => {
-    if (!feat || !channels) return;
-    const name = feat.properties?.name?.trim();
-    const iso_a2 = feat.properties?.iso_a2 || "";
-    const iso_a3 = feat.properties?.iso_a3 || "";
-    const id = feat.id?.toString() || "";
+  const name = feat.properties?.name?.trim();
+  if (!name) return;
 
-    const keysToTry = [name, iso_a2, iso_a3, id].filter(Boolean);
-    let matched = null;
+  // 👇 prevent re-triggering same country during globe moves
+  if (selectedCountry && selectedCountry.name === name) {
+    return; // ignore duplicate clicks or zoom triggers
+  }
 
-    for (const k of keysToTry) {
-      const match = Object.keys(channels).find(
-        (x) => x.toLowerCase() === k.toLowerCase()
-      );
-      if (match) {
-        matched = channels[match];
-        break;
-      }
+  const iso_a2 = feat.properties?.iso_a2 || "";
+  const iso_a3 = feat.properties?.iso_a3 || "";
+  const id = feat.id?.toString() || "";
+
+  const keysToTry = [name, iso_a2, iso_a3, id].filter(Boolean);
+  let matched = null;
+
+  for (const k of keysToTry) {
+    const match = Object.keys(channels).find(
+      (x) => x.toLowerCase() === k.toLowerCase()
+    );
+    if (match) {
+      matched = channels[match];
+      break;
     }
+  }
 
-    // fallback: partial match
-    if (!matched) {
-      matched = Object.entries(channels).find(([k]) =>
-        name?.toLowerCase().includes(k.toLowerCase())
-      )?.[1];
-    }
+  // fallback partial match
+  if (!matched) {
+    matched = Object.entries(channels).find(([k]) =>
+      name.toLowerCase().includes(k.toLowerCase())
+    )?.[1];
+  }
 
-    if (matched && matched.channels?.length) {
-      setSelectedCountry({ name, channels: matched.channels });
-      setCurrentChannel(matched.channels[0]);
-    } else {
-      setSelectedCountry({ name, channels: [] });
-      setCurrentChannel(null);
-    }
+  if (matched && matched.channels?.length) {
+    setSelectedCountry({ name, channels: matched.channels });
+    setCurrentChannel(matched.channels[0]);
+  } else {
+    setSelectedCountry({ name, channels: [] });
+    setCurrentChannel(null);
+  }
+};
   };
 
   // HLS player setup
