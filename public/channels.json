@@ -1,7 +1,7 @@
 {
-  "AD": {
-    "code": "AD",
-    "name": "AD",
+  "Andorra": {
+    "code": "Andorra",
+    "name": "Andorra",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -15,9 +15,9 @@
       }
     ]
   },
-  "AE": {
-    "code": "AE",
-    "name": "AE",
+  "United Arab Emirates": {
+    "code": "United Arab Emirates",
+    "name": "United Arab Emirates",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -407,9 +407,9 @@
       }
     ]
   },
-  "AF": {
-    "code": "AF",
-    "name": "AF",
+  "Afghanistan": {
+    "code": "Afghanistan",
+    "name": "Afghanistan",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -519,9 +519,9 @@
       }
     ]
   },
-  "AL": {
-    "code": "AL",
-    "name": "AL",
+  "Albania": {
+    "code": "Albania",
+    "name": "Albania",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -567,9 +567,9 @@
       }
     ]
   },
-  "AM": {
-    "code": "AM",
-    "name": "AM",
+  "Armenia": {
+    "code": "Armenia",
+    "name": "Armenia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -599,9 +599,9 @@
       }
     ]
   },
-  "AO": {
-    "code": "AO",
-    "name": "AO",
+  "Angola": {
+    "code": "Angola",
+    "name": "Angola",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -631,9 +631,9 @@
       }
     ]
   },
-  "AR": {
-    "code": "AR",
-    "name": "AR",
+  "Argentina": {
+    "code": "Argentina",
+    "name": "Argentina",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -1431,9 +1431,9 @@
       }
     ]
   },
-  "AT": {
-    "code": "AT",
-    "name": "AT",
+  "Austria": {
+    "code": "Austria",
+    "name": "Austria",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -1679,9 +1679,9 @@
       }
     ]
   },
-  "AU": {
-    "code": "AU",
-    "name": "AU",
+  "Australia": {
+    "code": "Australia",
+    "name": "Australia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -1847,9 +1847,9 @@
       }
     ]
   },
-  "AW": {
-    "code": "AW",
-    "name": "AW",
+  "Aruba": {
+    "code": "Aruba",
+    "name": "Aruba",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -1895,9 +1895,9 @@
       }
     ]
   },
-  "AZ": {
-    "code": "AZ",
-    "name": "AZ",
+  "Azerbaijan": {
+    "code": "Azerbaijan",
+    "name": "Azerbaijan",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -1943,9 +1943,9 @@
       }
     ]
   },
-  "BA": {
-    "code": "BA",
-    "name": "BA",
+  "Bosnia and Herzegovina": {
+    "code": "Bosnia and Herzegovina",
+    "name": "Bosnia and Herzegovina",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2023,9 +2023,9 @@
       }
     ]
   },
-  "BD": {
-    "code": "BD",
-    "name": "BD",
+  "Bangladesh": {
+    "code": "Bangladesh",
+    "name": "Bangladesh",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2127,9 +2127,9 @@
       }
     ]
   },
-  "BE": {
-    "code": "BE",
-    "name": "BE",
+  "Belgium": {
+    "code": "Belgium",
+    "name": "Belgium",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2255,9 +2255,9 @@
       }
     ]
   },
-  "BF": {
-    "code": "BF",
-    "name": "BF",
+  "Burkina Faso": {
+    "code": "Burkina Faso",
+    "name": "Burkina Faso",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2359,9 +2359,9 @@
       }
     ]
   },
-  "BG": {
-    "code": "BG",
-    "name": "BG",
+  "Bulgaria": {
+    "code": "Bulgaria",
+    "name": "Bulgaria",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2447,9 +2447,9 @@
       }
     ]
   },
-  "BH": {
-    "code": "BH",
-    "name": "BH",
+  "Bahrain": {
+    "code": "Bahrain",
+    "name": "Bahrain",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2495,9 +2495,9 @@
       }
     ]
   },
-  "BI": {
-    "code": "BI",
-    "name": "BI",
+  "Burundi": {
+    "code": "Burundi",
+    "name": "Burundi",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2519,9 +2519,9 @@
       }
     ]
   },
-  "BJ": {
-    "code": "BJ",
-    "name": "BJ",
+  "Benin": {
+    "code": "Benin",
+    "name": "Benin",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2591,9 +2591,9 @@
       }
     ]
   },
-  "BN": {
-    "code": "BN",
-    "name": "BN",
+  "Brunei Darussalam": {
+    "code": "Brunei Darussalam",
+    "name": "Brunei Darussalam",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2623,9 +2623,9 @@
       }
     ]
   },
-  "BO": {
-    "code": "BO",
-    "name": "BO",
+  "Bolivia, Plurinational State of": {
+    "code": "Bolivia, Plurinational State of",
+    "name": "Bolivia, Plurinational State of",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2751,9 +2751,9 @@
       }
     ]
   },
-  "BQ": {
-    "code": "BQ",
-    "name": "BQ",
+  "Bonaire, Sint Eustatius and Saba": {
+    "code": "Bonaire, Sint Eustatius and Saba",
+    "name": "Bonaire, Sint Eustatius and Saba",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -2783,9 +2783,9 @@
       }
     ]
   },
-  "BR": {
-    "code": "BR",
-    "name": "BR",
+  "Brazil": {
+    "code": "Brazil",
+    "name": "Brazil",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -3767,9 +3767,9 @@
       }
     ]
   },
-  "BS": {
-    "code": "BS",
-    "name": "BS",
+  "Bahamas": {
+    "code": "Bahamas",
+    "name": "Bahamas",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -3807,9 +3807,9 @@
       }
     ]
   },
-  "BW": {
-    "code": "BW",
-    "name": "BW",
+  "Botswana": {
+    "code": "Botswana",
+    "name": "Botswana",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -3847,9 +3847,9 @@
       }
     ]
   },
-  "BY": {
-    "code": "BY",
-    "name": "BY",
+  "Belarus": {
+    "code": "Belarus",
+    "name": "Belarus",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -3943,9 +3943,9 @@
       }
     ]
   },
-  "CA": {
-    "code": "CA",
-    "name": "CA",
+  "Canada": {
+    "code": "Canada",
+    "name": "Canada",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -5063,9 +5063,9 @@
       }
     ]
   },
-  "CD": {
-    "code": "CD",
-    "name": "CD",
+  "Congo, The Democratic Republic of the": {
+    "code": "Congo, The Democratic Republic of the",
+    "name": "Congo, The Democratic Republic of the",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -5159,9 +5159,9 @@
       }
     ]
   },
-  "CG": {
-    "code": "CG",
-    "name": "CG",
+  "Congo": {
+    "code": "Congo",
+    "name": "Congo",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -5175,9 +5175,9 @@
       }
     ]
   },
-  "CH": {
-    "code": "CH",
-    "name": "CH",
+  "Switzerland": {
+    "code": "Switzerland",
+    "name": "Switzerland",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -5415,9 +5415,9 @@
       }
     ]
   },
-  "CI": {
-    "code": "CI",
-    "name": "CI",
+  "Côte d'Ivoire": {
+    "code": "Côte d'Ivoire",
+    "name": "Côte d'Ivoire",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -5567,9 +5567,9 @@
       }
     ]
   },
-  "CL": {
-    "code": "CL",
-    "name": "CL",
+  "Chile": {
+    "code": "Chile",
+    "name": "Chile",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -6151,9 +6151,9 @@
       }
     ]
   },
-  "CM": {
-    "code": "CM",
-    "name": "CM",
+  "Cameroon": {
+    "code": "Cameroon",
+    "name": "Cameroon",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -6295,9 +6295,9 @@
       }
     ]
   },
-  "CN": {
-    "code": "CN",
-    "name": "CN",
+  "China": {
+    "code": "China",
+    "name": "China",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -6935,9 +6935,9 @@
       }
     ]
   },
-  "CO": {
-    "code": "CO",
-    "name": "CO",
+  "Colombia": {
+    "code": "Colombia",
+    "name": "Colombia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -7303,9 +7303,9 @@
       }
     ]
   },
-  "CR": {
-    "code": "CR",
-    "name": "CR",
+  "Costa Rica": {
+    "code": "Costa Rica",
+    "name": "Costa Rica",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -7631,9 +7631,9 @@
       }
     ]
   },
-  "CU": {
-    "code": "CU",
-    "name": "CU",
+  "Cuba": {
+    "code": "Cuba",
+    "name": "Cuba",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -7647,9 +7647,9 @@
       }
     ]
   },
-  "CV": {
-    "code": "CV",
-    "name": "CV",
+  "Cabo Verde": {
+    "code": "Cabo Verde",
+    "name": "Cabo Verde",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -7671,9 +7671,9 @@
       }
     ]
   },
-  "CW": {
-    "code": "CW",
-    "name": "CW",
+  "Curaçao": {
+    "code": "Curaçao",
+    "name": "Curaçao",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -7703,9 +7703,9 @@
       }
     ]
   },
-  "CY": {
-    "code": "CY",
-    "name": "CY",
+  "Cyprus": {
+    "code": "Cyprus",
+    "name": "Cyprus",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -7783,9 +7783,9 @@
       }
     ]
   },
-  "CZ": {
-    "code": "CZ",
-    "name": "CZ",
+  "Czechia": {
+    "code": "Czechia",
+    "name": "Czechia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -7943,9 +7943,9 @@
       }
     ]
   },
-  "DE": {
-    "code": "DE",
-    "name": "DE",
+  "Germany": {
+    "code": "Germany",
+    "name": "Germany",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -9223,9 +9223,9 @@
       }
     ]
   },
-  "DJ": {
-    "code": "DJ",
-    "name": "DJ",
+  "Djibouti": {
+    "code": "Djibouti",
+    "name": "Djibouti",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -9247,9 +9247,9 @@
       }
     ]
   },
-  "DK": {
-    "code": "DK",
-    "name": "DK",
+  "Denmark": {
+    "code": "Denmark",
+    "name": "Denmark",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -9287,9 +9287,9 @@
       }
     ]
   },
-  "DO": {
-    "code": "DO",
-    "name": "DO",
+  "Dominican Republic": {
+    "code": "Dominican Republic",
+    "name": "Dominican Republic",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -10519,9 +10519,9 @@
       }
     ]
   },
-  "DZ": {
-    "code": "DZ",
-    "name": "DZ",
+  "Algeria": {
+    "code": "Algeria",
+    "name": "Algeria",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -10623,9 +10623,9 @@
       }
     ]
   },
-  "EC": {
-    "code": "EC",
-    "name": "EC",
+  "Ecuador": {
+    "code": "Ecuador",
+    "name": "Ecuador",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -10919,9 +10919,9 @@
       }
     ]
   },
-  "EE": {
-    "code": "EE",
-    "name": "EE",
+  "Estonia": {
+    "code": "Estonia",
+    "name": "Estonia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -11047,9 +11047,9 @@
       }
     ]
   },
-  "EG": {
-    "code": "EG",
-    "name": "EG",
+  "Egypt": {
+    "code": "Egypt",
+    "name": "Egypt",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -11247,9 +11247,9 @@
       }
     ]
   },
-  "EH": {
-    "code": "EH",
-    "name": "EH",
+  "Western Sahara": {
+    "code": "Western Sahara",
+    "name": "Western Sahara",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -11271,9 +11271,9 @@
       }
     ]
   },
-  "ER": {
-    "code": "ER",
-    "name": "ER",
+  "Eritrea": {
+    "code": "Eritrea",
+    "name": "Eritrea",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -11295,9 +11295,9 @@
       }
     ]
   },
-  "ES": {
-    "code": "ES",
-    "name": "ES",
+  "Spain": {
+    "code": "Spain",
+    "name": "Spain",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -12735,9 +12735,9 @@
       }
     ]
   },
-  "ET": {
-    "code": "ET",
-    "name": "ET",
+  "Ethiopia": {
+    "code": "Ethiopia",
+    "name": "Ethiopia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -12767,9 +12767,9 @@
       }
     ]
   },
-  "FI": {
-    "code": "FI",
-    "name": "FI",
+  "Finland": {
+    "code": "Finland",
+    "name": "Finland",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -12927,9 +12927,9 @@
       }
     ]
   },
-  "FO": {
-    "code": "FO",
-    "name": "FO",
+  "Faroe Islands": {
+    "code": "Faroe Islands",
+    "name": "Faroe Islands",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -12959,9 +12959,9 @@
       }
     ]
   },
-  "FR": {
-    "code": "FR",
-    "name": "FR",
+  "France": {
+    "code": "France",
+    "name": "France",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -14383,9 +14383,9 @@
       }
     ]
   },
-  "GA": {
-    "code": "GA",
-    "name": "GA",
+  "Gabon": {
+    "code": "Gabon",
+    "name": "Gabon",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -14399,9 +14399,9 @@
       }
     ]
   },
-  "GE": {
-    "code": "GE",
-    "name": "GE",
+  "Georgia": {
+    "code": "Georgia",
+    "name": "Georgia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -14471,9 +14471,9 @@
       }
     ]
   },
-  "GH": {
-    "code": "GH",
-    "name": "GH",
+  "Ghana": {
+    "code": "Ghana",
+    "name": "Ghana",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -14679,9 +14679,9 @@
       }
     ]
   },
-  "GL": {
-    "code": "GL",
-    "name": "GL",
+  "Greenland": {
+    "code": "Greenland",
+    "name": "Greenland",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -14703,9 +14703,9 @@
       }
     ]
   },
-  "GM": {
-    "code": "GM",
-    "name": "GM",
+  "Gambia": {
+    "code": "Gambia",
+    "name": "Gambia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -14735,9 +14735,9 @@
       }
     ]
   },
-  "GN": {
-    "code": "GN",
-    "name": "GN",
+  "Guinea": {
+    "code": "Guinea",
+    "name": "Guinea",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -14831,9 +14831,9 @@
       }
     ]
   },
-  "GP": {
-    "code": "GP",
-    "name": "GP",
+  "Guadeloupe": {
+    "code": "Guadeloupe",
+    "name": "Guadeloupe",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -14879,9 +14879,9 @@
       }
     ]
   },
-  "GQ": {
-    "code": "GQ",
-    "name": "GQ",
+  "Equatorial Guinea": {
+    "code": "Equatorial Guinea",
+    "name": "Equatorial Guinea",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -14903,9 +14903,9 @@
       }
     ]
   },
-  "GR": {
-    "code": "GR",
-    "name": "GR",
+  "Greece": {
+    "code": "Greece",
+    "name": "Greece",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -15215,9 +15215,9 @@
       }
     ]
   },
-  "GT": {
-    "code": "GT",
-    "name": "GT",
+  "Guatemala": {
+    "code": "Guatemala",
+    "name": "Guatemala",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -15391,9 +15391,9 @@
       }
     ]
   },
-  "GU": {
-    "code": "GU",
-    "name": "GU",
+  "Guam": {
+    "code": "Guam",
+    "name": "Guam",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -15407,9 +15407,9 @@
       }
     ]
   },
-  "GY": {
-    "code": "GY",
-    "name": "GY",
+  "Guyana": {
+    "code": "Guyana",
+    "name": "Guyana",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -15431,9 +15431,9 @@
       }
     ]
   },
-  "HK": {
-    "code": "HK",
-    "name": "HK",
+  "Hong Kong": {
+    "code": "Hong Kong",
+    "name": "Hong Kong",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -15455,9 +15455,9 @@
       }
     ]
   },
-  "HN": {
-    "code": "HN",
-    "name": "HN",
+  "Honduras": {
+    "code": "Honduras",
+    "name": "Honduras",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -15759,9 +15759,9 @@
       }
     ]
   },
-  "HR": {
-    "code": "HR",
-    "name": "HR",
+  "Croatia": {
+    "code": "Croatia",
+    "name": "Croatia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -15839,9 +15839,9 @@
       }
     ]
   },
-  "HT": {
-    "code": "HT",
-    "name": "HT",
+  "Haiti": {
+    "code": "Haiti",
+    "name": "Haiti",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -15935,9 +15935,9 @@
       }
     ]
   },
-  "HU": {
-    "code": "HU",
-    "name": "HU",
+  "Hungary": {
+    "code": "Hungary",
+    "name": "Hungary",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -16207,9 +16207,9 @@
       }
     ]
   },
-  "ID": {
-    "code": "ID",
-    "name": "ID",
+  "Indonesia": {
+    "code": "Indonesia",
+    "name": "Indonesia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -17015,9 +17015,9 @@
       }
     ]
   },
-  "IE": {
-    "code": "IE",
-    "name": "IE",
+  "Ireland": {
+    "code": "Ireland",
+    "name": "Ireland",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -17087,9 +17087,9 @@
       }
     ]
   },
-  "IL": {
-    "code": "IL",
-    "name": "IL",
+  "Israel": {
+    "code": "Israel",
+    "name": "Israel",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -17215,9 +17215,9 @@
       }
     ]
   },
-  "IN": {
-    "code": "IN",
-    "name": "IN",
+  "India": {
+    "code": "India",
+    "name": "India",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -20423,9 +20423,9 @@
       }
     ]
   },
-  "IQ": {
-    "code": "IQ",
-    "name": "IQ",
+  "Iraq": {
+    "code": "Iraq",
+    "name": "Iraq",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -20695,9 +20695,9 @@
       }
     ]
   },
-  "IR": {
-    "code": "IR",
-    "name": "IR",
+  "Iran, Islamic Republic of": {
+    "code": "Iran, Islamic Republic of",
+    "name": "Iran, Islamic Republic of",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -21375,9 +21375,9 @@
       }
     ]
   },
-  "IS": {
-    "code": "IS",
-    "name": "IS",
+  "Iceland": {
+    "code": "Iceland",
+    "name": "Iceland",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -21407,9 +21407,9 @@
       }
     ]
   },
-  "IT": {
-    "code": "IT",
-    "name": "IT",
+  "Italy": {
+    "code": "Italy",
+    "name": "Italy",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -22767,9 +22767,9 @@
       }
     ]
   },
-  "JM": {
-    "code": "JM",
-    "name": "JM",
+  "Jamaica": {
+    "code": "Jamaica",
+    "name": "Jamaica",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -22815,9 +22815,9 @@
       }
     ]
   },
-  "JO": {
-    "code": "JO",
-    "name": "JO",
+  "Jordan": {
+    "code": "Jordan",
+    "name": "Jordan",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -22975,9 +22975,9 @@
       }
     ]
   },
-  "JP": {
-    "code": "JP",
-    "name": "JP",
+  "Japan": {
+    "code": "Japan",
+    "name": "Japan",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -23263,9 +23263,9 @@
       }
     ]
   },
-  "KE": {
-    "code": "KE",
-    "name": "KE",
+  "Kenya": {
+    "code": "Kenya",
+    "name": "Kenya",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -23503,9 +23503,9 @@
       }
     ]
   },
-  "KH": {
-    "code": "KH",
-    "name": "KH",
+  "Cambodia": {
+    "code": "Cambodia",
+    "name": "Cambodia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -23647,9 +23647,9 @@
       }
     ]
   },
-  "KM": {
-    "code": "KM",
-    "name": "KM",
+  "Comoros": {
+    "code": "Comoros",
+    "name": "Comoros",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -23663,9 +23663,9 @@
       }
     ]
   },
-  "KN": {
-    "code": "KN",
-    "name": "KN",
+  "Saint Kitts and Nevis": {
+    "code": "Saint Kitts and Nevis",
+    "name": "Saint Kitts and Nevis",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -23687,9 +23687,9 @@
       }
     ]
   },
-  "KR": {
-    "code": "KR",
-    "name": "KR",
+  "Korea, Republic of": {
+    "code": "Korea, Republic of",
+    "name": "Korea, Republic of",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -24303,9 +24303,9 @@
       }
     ]
   },
-  "KW": {
-    "code": "KW",
-    "name": "KW",
+  "Kuwait": {
+    "code": "Kuwait",
+    "name": "Kuwait",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -24415,9 +24415,9 @@
       }
     ]
   },
-  "KZ": {
-    "code": "KZ",
-    "name": "KZ",
+  "Kazakhstan": {
+    "code": "Kazakhstan",
+    "name": "Kazakhstan",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -24607,9 +24607,9 @@
       }
     ]
   },
-  "LA": {
-    "code": "LA",
-    "name": "LA",
+  "Lao People's Democratic Republic": {
+    "code": "Lao People's Democratic Republic",
+    "name": "Lao People's Democratic Republic",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -24711,9 +24711,9 @@
       }
     ]
   },
-  "LB": {
-    "code": "LB",
-    "name": "LB",
+  "Lebanon": {
+    "code": "Lebanon",
+    "name": "Lebanon",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -24895,9 +24895,9 @@
       }
     ]
   },
-  "LC": {
-    "code": "LC",
-    "name": "LC",
+  "Saint Lucia": {
+    "code": "Saint Lucia",
+    "name": "Saint Lucia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -24911,9 +24911,9 @@
       }
     ]
   },
-  "LK": {
-    "code": "LK",
-    "name": "LK",
+  "Sri Lanka": {
+    "code": "Sri Lanka",
+    "name": "Sri Lanka",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25135,9 +25135,9 @@
       }
     ]
   },
-  "LR": {
-    "code": "LR",
-    "name": "LR",
+  "Liberia": {
+    "code": "Liberia",
+    "name": "Liberia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25151,9 +25151,9 @@
       }
     ]
   },
-  "LT": {
-    "code": "LT",
-    "name": "LT",
+  "Lithuania": {
+    "code": "Lithuania",
+    "name": "Lithuania",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25207,9 +25207,9 @@
       }
     ]
   },
-  "LU": {
-    "code": "LU",
-    "name": "LU",
+  "Luxembourg": {
+    "code": "Luxembourg",
+    "name": "Luxembourg",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25295,9 +25295,9 @@
       }
     ]
   },
-  "LV": {
-    "code": "LV",
-    "name": "LV",
+  "Latvia": {
+    "code": "Latvia",
+    "name": "Latvia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25367,9 +25367,9 @@
       }
     ]
   },
-  "LY": {
-    "code": "LY",
-    "name": "LY",
+  "Libya": {
+    "code": "Libya",
+    "name": "Libya",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25415,9 +25415,9 @@
       }
     ]
   },
-  "MA": {
-    "code": "MA",
-    "name": "MA",
+  "Morocco": {
+    "code": "Morocco",
+    "name": "Morocco",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25519,9 +25519,9 @@
       }
     ]
   },
-  "MC": {
-    "code": "MC",
-    "name": "MC",
+  "Monaco": {
+    "code": "Monaco",
+    "name": "Monaco",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25551,9 +25551,9 @@
       }
     ]
   },
-  "MD": {
-    "code": "MD",
-    "name": "MD",
+  "Moldova, Republic of": {
+    "code": "Moldova, Republic of",
+    "name": "Moldova, Republic of",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25599,9 +25599,9 @@
       }
     ]
   },
-  "ME": {
-    "code": "ME",
-    "name": "ME",
+  "Montenegro": {
+    "code": "Montenegro",
+    "name": "Montenegro",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25615,9 +25615,9 @@
       }
     ]
   },
-  "MG": {
-    "code": "MG",
-    "name": "MG",
+  "Madagascar": {
+    "code": "Madagascar",
+    "name": "Madagascar",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25631,9 +25631,9 @@
       }
     ]
   },
-  "MK": {
-    "code": "MK",
-    "name": "MK",
+  "North Macedonia": {
+    "code": "North Macedonia",
+    "name": "North Macedonia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25679,9 +25679,9 @@
       }
     ]
   },
-  "ML": {
-    "code": "ML",
-    "name": "ML",
+  "Mali": {
+    "code": "Mali",
+    "name": "Mali",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25751,9 +25751,9 @@
       }
     ]
   },
-  "MM": {
-    "code": "MM",
-    "name": "MM",
+  "Myanmar": {
+    "code": "Myanmar",
+    "name": "Myanmar",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25783,9 +25783,9 @@
       }
     ]
   },
-  "MN": {
-    "code": "MN",
-    "name": "MN",
+  "Mongolia": {
+    "code": "Mongolia",
+    "name": "Mongolia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25823,9 +25823,9 @@
       }
     ]
   },
-  "MQ": {
-    "code": "MQ",
-    "name": "MQ",
+  "Martinique": {
+    "code": "Martinique",
+    "name": "Martinique",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25855,9 +25855,9 @@
       }
     ]
   },
-  "MT": {
-    "code": "MT",
-    "name": "MT",
+  "Malta": {
+    "code": "Malta",
+    "name": "Malta",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25871,9 +25871,9 @@
       }
     ]
   },
-  "MU": {
-    "code": "MU",
-    "name": "MU",
+  "Mauritius": {
+    "code": "Mauritius",
+    "name": "Mauritius",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25919,9 +25919,9 @@
       }
     ]
   },
-  "MV": {
-    "code": "MV",
-    "name": "MV",
+  "Maldives": {
+    "code": "Maldives",
+    "name": "Maldives",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25935,9 +25935,9 @@
       }
     ]
   },
-  "MW": {
-    "code": "MW",
-    "name": "MW",
+  "Malawi": {
+    "code": "Malawi",
+    "name": "Malawi",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -25951,9 +25951,9 @@
       }
     ]
   },
-  "MX": {
-    "code": "MX",
-    "name": "MX",
+  "Mexico": {
+    "code": "Mexico",
+    "name": "Mexico",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -26711,9 +26711,9 @@
       }
     ]
   },
-  "MY": {
-    "code": "MY",
-    "name": "MY",
+  "Malaysia": {
+    "code": "Malaysia",
+    "name": "Malaysia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -26831,9 +26831,9 @@
       }
     ]
   },
-  "MZ": {
-    "code": "MZ",
-    "name": "MZ",
+  "Mozambique": {
+    "code": "Mozambique",
+    "name": "Mozambique",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -26871,9 +26871,9 @@
       }
     ]
   },
-  "NA": {
-    "code": "NA",
-    "name": "NA",
+  "Namibia": {
+    "code": "Namibia",
+    "name": "Namibia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -26903,9 +26903,9 @@
       }
     ]
   },
-  "NE": {
-    "code": "NE",
-    "name": "NE",
+  "Niger": {
+    "code": "Niger",
+    "name": "Niger",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -27007,9 +27007,9 @@
       }
     ]
   },
-  "NG": {
-    "code": "NG",
-    "name": "NG",
+  "Nigeria": {
+    "code": "Nigeria",
+    "name": "Nigeria",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -27391,9 +27391,9 @@
       }
     ]
   },
-  "NI": {
-    "code": "NI",
-    "name": "NI",
+  "Nicaragua": {
+    "code": "Nicaragua",
+    "name": "Nicaragua",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -27415,9 +27415,9 @@
       }
     ]
   },
-  "NL": {
-    "code": "NL",
-    "name": "NL",
+  "Netherlands": {
+    "code": "Netherlands",
+    "name": "Netherlands",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -28439,9 +28439,9 @@
       }
     ]
   },
-  "NO": {
-    "code": "NO",
-    "name": "NO",
+  "Norway": {
+    "code": "Norway",
+    "name": "Norway",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -28479,9 +28479,9 @@
       }
     ]
   },
-  "NP": {
-    "code": "NP",
-    "name": "NP",
+  "Nepal": {
+    "code": "Nepal",
+    "name": "Nepal",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -28519,9 +28519,9 @@
       }
     ]
   },
-  "NZ": {
-    "code": "NZ",
-    "name": "NZ",
+  "New Zealand": {
+    "code": "New Zealand",
+    "name": "New Zealand",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -28583,9 +28583,9 @@
       }
     ]
   },
-  "OM": {
-    "code": "OM",
-    "name": "OM",
+  "Oman": {
+    "code": "Oman",
+    "name": "Oman",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -28639,9 +28639,9 @@
       }
     ]
   },
-  "PA": {
-    "code": "PA",
-    "name": "PA",
+  "Panama": {
+    "code": "Panama",
+    "name": "Panama",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -28719,9 +28719,9 @@
       }
     ]
   },
-  "PE": {
-    "code": "PE",
-    "name": "PE",
+  "Peru": {
+    "code": "Peru",
+    "name": "Peru",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -29159,9 +29159,9 @@
       }
     ]
   },
-  "PH": {
-    "code": "PH",
-    "name": "PH",
+  "Philippines": {
+    "code": "Philippines",
+    "name": "Philippines",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -29191,9 +29191,9 @@
       }
     ]
   },
-  "PK": {
-    "code": "PK",
-    "name": "PK",
+  "Pakistan": {
+    "code": "Pakistan",
+    "name": "Pakistan",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -29599,9 +29599,9 @@
       }
     ]
   },
-  "PL": {
-    "code": "PL",
-    "name": "PL",
+  "Poland": {
+    "code": "Poland",
+    "name": "Poland",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -30031,9 +30031,9 @@
       }
     ]
   },
-  "PR": {
-    "code": "PR",
-    "name": "PR",
+  "Puerto Rico": {
+    "code": "Puerto Rico",
+    "name": "Puerto Rico",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -30215,9 +30215,9 @@
       }
     ]
   },
-  "PS": {
-    "code": "PS",
-    "name": "PS",
+  "Palestine, State of": {
+    "code": "Palestine, State of",
+    "name": "Palestine, State of",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -30343,9 +30343,9 @@
       }
     ]
   },
-  "PT": {
-    "code": "PT",
-    "name": "PT",
+  "Portugal": {
+    "code": "Portugal",
+    "name": "Portugal",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -30599,9 +30599,9 @@
       }
     ]
   },
-  "PY": {
-    "code": "PY",
-    "name": "PY",
+  "Paraguay": {
+    "code": "Paraguay",
+    "name": "Paraguay",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -30719,9 +30719,9 @@
       }
     ]
   },
-  "QA": {
-    "code": "QA",
-    "name": "QA",
+  "Qatar": {
+    "code": "Qatar",
+    "name": "Qatar",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -31079,9 +31079,9 @@
       }
     ]
   },
-  "RO": {
-    "code": "RO",
-    "name": "RO",
+  "Romania": {
+    "code": "Romania",
+    "name": "Romania",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -31431,9 +31431,9 @@
       }
     ]
   },
-  "RS": {
-    "code": "RS",
-    "name": "RS",
+  "Serbia": {
+    "code": "Serbia",
+    "name": "Serbia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -31599,9 +31599,9 @@
       }
     ]
   },
-  "RU": {
-    "code": "RU",
-    "name": "RU",
+  "Russian Federation": {
+    "code": "Russian Federation",
+    "name": "Russian Federation",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -33247,9 +33247,9 @@
       }
     ]
   },
-  "RW": {
-    "code": "RW",
-    "name": "RW",
+  "Rwanda": {
+    "code": "Rwanda",
+    "name": "Rwanda",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -33335,9 +33335,9 @@
       }
     ]
   },
-  "SA": {
-    "code": "SA",
-    "name": "SA",
+  "Saudi Arabia": {
+    "code": "Saudi Arabia",
+    "name": "Saudi Arabia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -33679,9 +33679,9 @@
       }
     ]
   },
-  "SD": {
-    "code": "SD",
-    "name": "SD",
+  "Sudan": {
+    "code": "Sudan",
+    "name": "Sudan",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -33711,9 +33711,9 @@
       }
     ]
   },
-  "SE": {
-    "code": "SE",
-    "name": "SE",
+  "Sweden": {
+    "code": "Sweden",
+    "name": "Sweden",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -33775,9 +33775,9 @@
       }
     ]
   },
-  "SG": {
-    "code": "SG",
-    "name": "SG",
+  "Singapore": {
+    "code": "Singapore",
+    "name": "Singapore",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -33847,9 +33847,9 @@
       }
     ]
   },
-  "SI": {
-    "code": "SI",
-    "name": "SI",
+  "Slovenia": {
+    "code": "Slovenia",
+    "name": "Slovenia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -33887,9 +33887,9 @@
       }
     ]
   },
-  "SK": {
-    "code": "SK",
-    "name": "SK",
+  "Slovakia": {
+    "code": "Slovakia",
+    "name": "Slovakia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34023,9 +34023,9 @@
       }
     ]
   },
-  "SM": {
-    "code": "SM",
-    "name": "SM",
+  "San Marino": {
+    "code": "San Marino",
+    "name": "San Marino",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34039,9 +34039,9 @@
       }
     ]
   },
-  "SN": {
-    "code": "SN",
-    "name": "SN",
+  "Senegal": {
+    "code": "Senegal",
+    "name": "Senegal",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34143,9 +34143,9 @@
       }
     ]
   },
-  "SO": {
-    "code": "SO",
-    "name": "SO",
+  "Somalia": {
+    "code": "Somalia",
+    "name": "Somalia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34167,9 +34167,9 @@
       }
     ]
   },
-  "SR": {
-    "code": "SR",
-    "name": "SR",
+  "Suriname": {
+    "code": "Suriname",
+    "name": "Suriname",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34191,9 +34191,9 @@
       }
     ]
   },
-  "SV": {
-    "code": "SV",
-    "name": "SV",
+  "El Salvador": {
+    "code": "El Salvador",
+    "name": "El Salvador",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34271,9 +34271,9 @@
       }
     ]
   },
-  "SX": {
-    "code": "SX",
-    "name": "SX",
+  "Sint Maarten (Dutch part)": {
+    "code": "Sint Maarten (Dutch part)",
+    "name": "Sint Maarten (Dutch part)",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34343,9 +34343,9 @@
       }
     ]
   },
-  "SY": {
-    "code": "SY",
-    "name": "SY",
+  "Syrian Arab Republic": {
+    "code": "Syrian Arab Republic",
+    "name": "Syrian Arab Republic",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34407,9 +34407,9 @@
       }
     ]
   },
-  "TD": {
-    "code": "TD",
-    "name": "TD",
+  "Chad": {
+    "code": "Chad",
+    "name": "Chad",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34431,9 +34431,9 @@
       }
     ]
   },
-  "TG": {
-    "code": "TG",
-    "name": "TG",
+  "Togo": {
+    "code": "Togo",
+    "name": "Togo",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34479,9 +34479,9 @@
       }
     ]
   },
-  "TH": {
-    "code": "TH",
-    "name": "TH",
+  "Thailand": {
+    "code": "Thailand",
+    "name": "Thailand",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34855,9 +34855,9 @@
       }
     ]
   },
-  "TJ": {
-    "code": "TJ",
-    "name": "TJ",
+  "Tajikistan": {
+    "code": "Tajikistan",
+    "name": "Tajikistan",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -34959,9 +34959,9 @@
       }
     ]
   },
-  "TN": {
-    "code": "TN",
-    "name": "TN",
+  "Tunisia": {
+    "code": "Tunisia",
+    "name": "Tunisia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -35015,9 +35015,9 @@
       }
     ]
   },
-  "TR": {
-    "code": "TR",
-    "name": "TR",
+  "Turkey": {
+    "code": "Turkey",
+    "name": "Turkey",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -36455,9 +36455,9 @@
       }
     ]
   },
-  "TT": {
-    "code": "TT",
-    "name": "TT",
+  "Trinidad and Tobago": {
+    "code": "Trinidad and Tobago",
+    "name": "Trinidad and Tobago",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -36471,9 +36471,9 @@
       }
     ]
   },
-  "TW": {
-    "code": "TW",
-    "name": "TW",
+  "Taiwan, Province of China": {
+    "code": "Taiwan, Province of China",
+    "name": "Taiwan, Province of China",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -37103,9 +37103,9 @@
       }
     ]
   },
-  "TZ": {
-    "code": "TZ",
-    "name": "TZ",
+  "Tanzania, United Republic of": {
+    "code": "Tanzania, United Republic of",
+    "name": "Tanzania, United Republic of",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -37135,9 +37135,9 @@
       }
     ]
   },
-  "UA": {
-    "code": "UA",
-    "name": "UA",
+  "Ukraine": {
+    "code": "Ukraine",
+    "name": "Ukraine",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -37407,9 +37407,9 @@
       }
     ]
   },
-  "UG": {
-    "code": "UG",
-    "name": "UG",
+  "Uganda": {
+    "code": "Uganda",
+    "name": "Uganda",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -38967,9 +38967,9 @@
       }
     ]
   },
-  "US": {
-    "code": "US",
-    "name": "US",
+  "United States": {
+    "code": "United States",
+    "name": "United States",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -50791,9 +50791,9 @@
       }
     ]
   },
-  "UY": {
-    "code": "UY",
-    "name": "UY",
+  "Uruguay": {
+    "code": "Uruguay",
+    "name": "Uruguay",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -50823,9 +50823,9 @@
       }
     ]
   },
-  "UZ": {
-    "code": "UZ",
-    "name": "UZ",
+  "Uzbekistan": {
+    "code": "Uzbekistan",
+    "name": "Uzbekistan",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -50847,9 +50847,9 @@
       }
     ]
   },
-  "VE": {
-    "code": "VE",
-    "name": "VE",
+  "Venezuela, Bolivarian Republic of": {
+    "code": "Venezuela, Bolivarian Republic of",
+    "name": "Venezuela, Bolivarian Republic of",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -51183,9 +51183,9 @@
       }
     ]
   },
-  "VG": {
-    "code": "VG",
-    "name": "VG",
+  "Virgin Islands, British": {
+    "code": "Virgin Islands, British",
+    "name": "Virgin Islands, British",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -51207,9 +51207,9 @@
       }
     ]
   },
-  "VI": {
-    "code": "VI",
-    "name": "VI",
+  "Virgin Islands, U.S.": {
+    "code": "Virgin Islands, U.S.",
+    "name": "Virgin Islands, U.S.",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -51223,9 +51223,9 @@
       }
     ]
   },
-  "VN": {
-    "code": "VN",
-    "name": "VN",
+  "Viet Nam": {
+    "code": "Viet Nam",
+    "name": "Viet Nam",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -51351,9 +51351,9 @@
       }
     ]
   },
-  "WS": {
-    "code": "WS",
-    "name": "WS",
+  "Samoa": {
+    "code": "Samoa",
+    "name": "Samoa",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -51431,9 +51431,9 @@
       }
     ]
   },
-  "YE": {
-    "code": "YE",
-    "name": "YE",
+  "Yemen": {
+    "code": "Yemen",
+    "name": "Yemen",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -51479,9 +51479,9 @@
       }
     ]
   },
-  "ZA": {
-    "code": "ZA",
-    "name": "ZA",
+  "South Africa": {
+    "code": "South Africa",
+    "name": "South Africa",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -51695,9 +51695,9 @@
       }
     ]
   },
-  "ZM": {
-    "code": "ZM",
-    "name": "ZM",
+  "Zambia": {
+    "code": "Zambia",
+    "name": "Zambia",
     "capital": "",
     "timezone": "",
     "channels": [
@@ -51823,9 +51823,9 @@
       }
     ]
   },
-  "ZW": {
-    "code": "ZW",
-    "name": "ZW",
+  "Zimbabwe": {
+    "code": "Zimbabwe",
+    "name": "Zimbabwe",
     "capital": "",
     "timezone": "",
     "channels": [
