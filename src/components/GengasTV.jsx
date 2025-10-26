@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Globe from "react-globe.gl";
 import * as topojson from "topojson-client";
-import * as d3 from "d3";
+import * as THREE from "three";
 import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
@@ -9,138 +9,135 @@ export default function GengasTV() {
   const [countries, setCountries] = useState([]);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [hovered, setHovered] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // 🌍 Load TopoJSON world data
-  useEffect(() => {
-    fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
-      .then((res) => res.json())
-      .then((topo) => {
-        const geo = topojson.feature(topo, topo.objects.countries).features;
-        setCountries(geo);
-      })
-      .catch((err) => console.error("Failed to load world map:", err));
-  }, []);
-
-  // 📡 Load channels from GitHub / local fallback
-  useEffect(() => {
-    loadChannels()
-      .then((data) => {
-        if (data) setChannels(data);
-        else console.error("Channels JSON missing or invalid");
-      })
-      .catch((e) => console.error("Failed to load channels:", e));
-  }, []);
-
-  // 🎨 Color each country differently
-  const getColor = (f) => {
-    if (hovered === f) return "orange";
-    return d3.schemeCategory10[Math.floor(Math.random() * 10)];
+  // 🎨 Generate random colors per country
+  const getRandomColor = (seed) => {
+    const hue = (seed * 137.5) % 360;
+    return `hsl(${hue}, 70%, 50%)`;
   };
 
-  // 🖱️ Handle click to show channels
+  // 🌍 Load world map and channels
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const res = await fetch("/world-110m.json");
+        const worldData = await res.json();
+        const features = topojson.feature(worldData, worldData.objects.countries).features;
+        setCountries(features);
+      } catch (e) {
+        console.error("Failed to load world map:", e);
+      }
+
+      const ch = await loadChannels();
+      if (ch) setChannels(ch);
+
+      setLoading(false);
+    };
+
+    loadData();
+  }, []);
+
+  // 🖱️ Handle country click — match ISO codes and names
   const handleClick = (f) => {
-    const code = f?.properties?.iso_a2 || f.id;
-    const match = channels[code];
-    if (match && match.channels?.length) {
+    if (!f) return;
+    const isoCode = f.properties?.iso_a2 || f.id || f.properties?.name;
+    const code = isoCode?.toUpperCase();
+
+    const countryData =
+      channels[code] ||
+      Object.values(channels).find(
+        (c) =>
+          c.name?.toLowerCase() === f.properties.name?.toLowerCase() ||
+          c.code === code
+      );
+
+    if (countryData && countryData.channels?.length) {
       setSelectedCountry({
-        code,
+        code: code,
         name: f.properties.name,
-        channels: match.channels,
+        channels: countryData.channels,
       });
     } else {
+      console.warn("No match for", f.properties.name, code);
       setSelectedCountry({
-        code,
+        code: code,
         name: f.properties.name,
         channels: [],
       });
     }
   };
 
-  return (
-    <div style={{ height: "100vh", background: "#000", position: "relative" }}>
-      {/* 🌐 Title */}
-      <div
-        style={{
-          position: "absolute",
-          top: 20,
-          left: 20,
-          color: "#00ffff",
-          fontSize: "1.8rem",
-          fontFamily: "Poppins, sans-serif",
-          fontWeight: "bold",
-          textShadow: "0 0 10px #00ffff, 0 0 20px #00ffff",
-          zIndex: 9999,
-        }}
-      >
-        🌐 Gengas TV
-      </div>
+  // 🌈 Country coloring (political style)
+  const getCountryColor = (country) => {
+    const id = country?.id || 0;
+    return getRandomColor(id);
+  };
 
-      {/* 🪐 Globe */}
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-black text-white text-xl">
+        Loading Gengas TV Globe...
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-screen bg-black overflow-hidden">
+      {/* 🌍 Globe */}
       <Globe
         ref={globeRef}
-        globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-        backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+        width={window.innerWidth}
+        height={window.innerHeight}
+        globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+        backgroundColor="rgba(0,0,0,1)"
         polygonsData={countries}
-        polygonCapColor={getColor}
-        polygonSideColor={() => "rgba(0,0,0,0.2)"}
+        polygonCapColor={getCountryColor}
+        polygonSideColor={() => "rgba(0,100,255,0.2)"}
         polygonStrokeColor={() => "#111"}
-        onPolygonHover={setHovered}
         onPolygonClick={handleClick}
-        polygonsTransitionDuration={400}
-        atmosphereColor="#00ffff"
+        polygonLabel={(d) => `${d.properties.name}`}
+        showAtmosphere={true}
+        atmosphereColor="lightskyblue"
         atmosphereAltitude={0.25}
       />
 
-      {/* 📺 Sidebar */}
+      {/* 🏷️ Title */}
+      <div className="absolute top-6 left-6 text-4xl font-bold text-white drop-shadow-lg">
+        🌐 Gengas TV
+      </div>
+
+      {/* 📺 Sidebar for channels */}
       {selectedCountry && (
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            right: 0,
-            height: "100%",
-            width: "300px",
-            background: "rgba(10,10,10,0.9)",
-            color: "#fff",
-            overflowY: "auto",
-            padding: "20px",
-            boxShadow: "0 0 15px #00ffff88",
-            borderLeft: "1px solid #00ffff44",
-            zIndex: 9998,
-          }}
-        >
-          <h2
-            style={{
-              color: "#00ffff",
-              textShadow: "0 0 8px #00ffff",
-              borderBottom: "1px solid #00ffff33",
-              paddingBottom: "5px",
-            }}
-          >
-            {selectedCountry.name}
+        <div className="absolute right-0 top-0 h-full w-80 bg-[#0b0b0b]/90 text-white p-5 overflow-y-auto border-l border-gray-700">
+          <h2 className="text-2xl font-semibold mb-4">
+            {selectedCountry.name} ({selectedCountry.code})
           </h2>
-          {selectedCountry.channels.length ? (
-            <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+
+          {selectedCountry.channels.length > 0 ? (
+            <div className="space-y-4">
               {selectedCountry.channels.map((ch, i) => (
-                <li key={i} style={{ margin: "8px 0" }}>
+                <div
+                  key={i}
+                  className="p-3 rounded-lg bg-[#1a1a1a] hover:bg-[#2c2c2c] transition"
+                >
+                  <h3 className="font-medium">{ch.name}</h3>
+                  <p className="text-sm text-gray-400">
+                    {ch.language?.toUpperCase() || "Unknown"}
+                  </p>
                   <a
                     href={ch.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                      color: "#0ff",
-                      textDecoration: "none",
-                      fontWeight: "500",
-                    }}
+                    className="text-blue-400 text-sm hover:underline"
                   >
-                    📺 {ch.name}
+                    Watch Channel →
                   </a>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
-            <p style={{ color: "#999" }}>No channels available</p>
+            <p className="text-gray-400 text-sm">No channels available</p>
           )}
         </div>
       )}
