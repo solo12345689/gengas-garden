@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Globe from "react-globe.gl";
 import * as topojson from "topojson-client";
-import Hls from "hls.js"; // for .m3u8 streaming
+import Hls from "hls.js";
 import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
@@ -12,13 +12,13 @@ export default function GengasTV() {
   const [currentChannel, setCurrentChannel] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🌈 Generate colorful map like TV Garden
+  // 🎨 Generate consistent random colors
   const getRandomColor = (id) => {
     const hue = (id * 47) % 360;
-    return `hsl(${hue}, 80%, 55%)`;
+    return `hsl(${hue}, 75%, 55%)`;
   };
 
-  // 🌍 Load map + channels
+  // 🌍 Load world map + channels
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -39,46 +39,52 @@ export default function GengasTV() {
     loadData();
   }, []);
 
-  // 🖱️ Handle click — correct ISO 2-letter mapping
+  // 🖱️ Handle country click — tolerant ISO code fallback
   const handleClick = (f) => {
     if (!f) return;
-    const isoCode = f.properties?.iso_a2?.toUpperCase();
-    console.log("Clicked country:", f.properties.name, "→", isoCode);
+
+    const props = f.properties || {};
+    const isoCode =
+      props.iso_a2?.toUpperCase?.() ||
+      props.ISO_A2?.toUpperCase?.() ||
+      props.ADM0_A3?.slice(0, 2)?.toUpperCase?.() ||
+      props.name?.slice(0, 2)?.toUpperCase?.();
+
+    console.log("Clicked country:", props.name, "→", isoCode);
 
     const countryData =
       channels[isoCode] ||
       Object.values(channels).find(
         (c) =>
           c.code?.toUpperCase() === isoCode ||
-          c.name?.toLowerCase() === f.properties.name?.toLowerCase()
+          c.name?.toLowerCase() === props.name?.toLowerCase()
       );
 
     if (countryData && countryData.channels?.length) {
       setSelectedCountry({
         code: isoCode,
-        name: f.properties.name,
+        name: props.name,
         channels: countryData.channels,
       });
-      setCurrentChannel(null);
+      setCurrentChannel(countryData.channels[0]); // auto play first channel
     } else {
-      console.warn("No match for", f.properties.name, isoCode);
+      console.warn("No match for", props.name, isoCode);
       setSelectedCountry({
         code: isoCode,
-        name: f.properties.name,
+        name: props.name,
         channels: [],
       });
       setCurrentChannel(null);
     }
   };
 
-  // 🎥 Handle channel selection
-  const handlePlayChannel = (ch) => {
-    setCurrentChannel(ch);
-  };
-
-  // 🔊 Initialize HLS player for .m3u8 streams
+  // 🎥 Handle channel playback
   useEffect(() => {
-    if (currentChannel && currentChannel.type === "iptv" && currentChannel.url.endsWith(".m3u8")) {
+    if (
+      currentChannel &&
+      currentChannel.type === "iptv" &&
+      currentChannel.url.endsWith(".m3u8")
+    ) {
       const video = document.getElementById("livePlayer");
       if (video) {
         if (Hls.isSupported()) {
@@ -91,6 +97,15 @@ export default function GengasTV() {
       }
     }
   }, [currentChannel]);
+
+  // 🌈 Country color (with fallback)
+  const getCountryColor = (country) => {
+    try {
+      return getRandomColor(country.id || 1);
+    } catch {
+      return "hsl(200, 50%, 40%)";
+    }
+  };
 
   if (loading) {
     return (
@@ -110,9 +125,9 @@ export default function GengasTV() {
         backgroundColor="rgba(0,0,0,1)"
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
         polygonsData={countries}
-        polygonCapColor={(d) => getRandomColor(d.id)}
+        polygonCapColor={getCountryColor}
         polygonSideColor={() => "rgba(255,255,255,0.05)"}
-        polygonStrokeColor={() => "#111"}
+        polygonStrokeColor={() => "#222"}
         onPolygonClick={handleClick}
         polygonLabel={(d) => `${d.properties.name}`}
         showAtmosphere={true}
@@ -120,7 +135,7 @@ export default function GengasTV() {
         atmosphereAltitude={0.25}
       />
 
-      {/* 🏷️ Title */}
+      {/* 🌐 Gengas TV Title */}
       <div className="absolute top-5 left-5 text-4xl font-bold text-white drop-shadow-md">
         🌐 Gengas TV
       </div>
@@ -166,7 +181,7 @@ export default function GengasTV() {
                       ? "bg-blue-600/60"
                       : "bg-[#1a1a1a] hover:bg-[#2a2a2a]"
                   }`}
-                  onClick={() => handlePlayChannel(ch)}
+                  onClick={() => setCurrentChannel(ch)}
                 >
                   <h3 className="font-medium">{ch.name}</h3>
                   <p className="text-xs text-gray-400">
