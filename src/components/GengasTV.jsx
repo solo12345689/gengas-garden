@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Globe from "react-globe.gl";
+import * as topojson from "topojson-client";
 import * as d3 from "d3";
 import { loadChannels } from "../utils/fetchChannels";
 
@@ -8,73 +9,65 @@ export default function GengasTV() {
   const [countries, setCountries] = useState([]);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [hoverD, setHoverD] = useState();
+  const [hovered, setHovered] = useState(null);
 
-  // 🌍 Load world map
+  // 🌍 Load TopoJSON world data
   useEffect(() => {
-    fetch("/world-110m.json")
+    fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then((res) => res.json())
-      .then((worldData) => {
-        try {
-          const countriesData = window.topojson.feature(
-            worldData,
-            worldData.objects.countries
-          ).features;
-          setCountries(countriesData);
-        } catch (err) {
-          console.error("Invalid world data format", worldData);
-        }
+      .then((topo) => {
+        const geo = topojson.feature(topo, topo.objects.countries).features;
+        setCountries(geo);
       })
-      .catch((err) => console.error("Failed to load world data", err));
+      .catch((err) => console.error("Failed to load world map:", err));
   }, []);
 
-  // 📡 Load channel list
+  // 📡 Load channels from GitHub / local fallback
   useEffect(() => {
-    loadChannels().then((data) => {
-      if (data) setChannels(data);
-      else console.error("No channels loaded");
-    });
+    loadChannels()
+      .then((data) => {
+        if (data) setChannels(data);
+        else console.error("Channels JSON missing or invalid");
+      })
+      .catch((e) => console.error("Failed to load channels:", e));
   }, []);
 
-  // 🎨 Random bright color per country
-  const getCountryColor = (feature) => {
-    if (hoverD === feature) return "orange";
-    return d3.schemeCategory10[
-      Math.floor(Math.random() * d3.schemeCategory10.length)
-    ];
+  // 🎨 Color each country differently
+  const getColor = (f) => {
+    if (hovered === f) return "orange";
+    return d3.schemeCategory10[Math.floor(Math.random() * 10)];
   };
 
-  // 🧭 When country is clicked
-  const handleCountryClick = (polygon) => {
-  const countryCode = polygon?.properties?.iso_a2 || polygon.id;
-  const matchKey = Object.keys(channels).find(
-    (key) => key.toUpperCase() === countryCode?.toUpperCase()
-  );
-
-  if (matchKey) {
-    const countryData = channels[matchKey];
-    setSelectedCountry({
-      code: matchKey,
-      name: countryData.name || polygon.properties.name,
-      channels: countryData.channels || [],
-    });
-  } else {
-    console.warn("No channels found for", countryCode);
-    setSelectedCountry(null);
-  }
-};
+  // 🖱️ Handle click to show channels
+  const handleClick = (f) => {
+    const code = f?.properties?.iso_a2 || f.id;
+    const match = channels[code];
+    if (match && match.channels?.length) {
+      setSelectedCountry({
+        code,
+        name: f.properties.name,
+        channels: match.channels,
+      });
+    } else {
+      setSelectedCountry({
+        code,
+        name: f.properties.name,
+        channels: [],
+      });
+    }
+  };
 
   return (
-    <div style={{ position: "relative", height: "100vh", background: "#000" }}>
-      {/* 🌐 Gengas TV title */}
+    <div style={{ height: "100vh", background: "#000", position: "relative" }}>
+      {/* 🌐 Title */}
       <div
         style={{
           position: "absolute",
           top: 20,
           left: 20,
           color: "#00ffff",
-          fontFamily: "Poppins, sans-serif",
           fontSize: "1.8rem",
+          fontFamily: "Poppins, sans-serif",
           fontWeight: "bold",
           textShadow: "0 0 10px #00ffff, 0 0 20px #00ffff",
           zIndex: 9999,
@@ -83,40 +76,23 @@ export default function GengasTV() {
         🌐 Gengas TV
       </div>
 
-      {/* Loading state */}
-      {!countries.length && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            color: "#0ff",
-            fontSize: "1.2rem",
-            fontFamily: "Poppins, sans-serif",
-          }}
-        >
-          🌍 Loading Globe...
-        </div>
-      )}
-
-      {/* 🪐 The Globe */}
+      {/* 🪐 Globe */}
       <Globe
         ref={globeRef}
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
         backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
         polygonsData={countries}
-        polygonCapColor={getCountryColor}
-        polygonSideColor={() => "rgba(0,0,0,0.15)"}
+        polygonCapColor={getColor}
+        polygonSideColor={() => "rgba(0,0,0,0.2)"}
         polygonStrokeColor={() => "#111"}
-        onPolygonHover={setHoverD}
-        onPolygonClick={handleCountryClick}
-        polygonsTransitionDuration={300}
-        atmosphereColor="#00bfff"
+        onPolygonHover={setHovered}
+        onPolygonClick={handleClick}
+        polygonsTransitionDuration={400}
+        atmosphereColor="#00ffff"
         atmosphereAltitude={0.25}
       />
 
-      {/* 📺 Sidebar for selected country */}
+      {/* 📺 Sidebar */}
       {selectedCountry && (
         <div
           style={{
@@ -144,9 +120,9 @@ export default function GengasTV() {
           >
             {selectedCountry.name}
           </h2>
-          <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-            {selectedCountry.channels?.length ? (
-              selectedCountry.channels.map((ch, i) => (
+          {selectedCountry.channels.length ? (
+            <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+              {selectedCountry.channels.map((ch, i) => (
                 <li key={i} style={{ margin: "8px 0" }}>
                   <a
                     href={ch.url}
@@ -161,11 +137,11 @@ export default function GengasTV() {
                     📺 {ch.name}
                   </a>
                 </li>
-              ))
-            ) : (
-              <li style={{ color: "#888" }}>No channels available</li>
-            )}
-          </ul>
+              ))}
+            </ul>
+          ) : (
+            <p style={{ color: "#999" }}>No channels available</p>
+          )}
         </div>
       )}
     </div>
