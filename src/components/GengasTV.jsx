@@ -3,6 +3,7 @@ import Globe from "react-globe.gl";
 import * as topojson from "topojson-client";
 import { loadChannels } from "../utils/fetchChannels";
 import * as THREE from "three";
+import Hls from "hls.js";
 
 export default function GengasTV() {
   const globeRef = useRef();
@@ -13,7 +14,7 @@ export default function GengasTV() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filtered, setFiltered] = useState([]);
 
-  // Load world polygons
+  // Load world map data
   useEffect(() => {
     fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then((res) => res.json())
@@ -23,7 +24,7 @@ export default function GengasTV() {
       });
   }, []);
 
-  // Load channel list
+  // Load channel data
   useEffect(() => {
     (async () => {
       const data = await loadChannels();
@@ -34,32 +35,18 @@ export default function GengasTV() {
     })();
   }, []);
 
-  // Search countries dynamically
-  useEffect(() => {
-    if (!worldData || searchTerm.trim() === "") {
-      setFiltered([]);
-      return;
-    }
-    const list = worldData
-      .map((c) => c.properties.name)
-      .filter((n) => n.toLowerCase().includes(searchTerm.toLowerCase()))
-      .slice(0, 10);
-    setFiltered(list);
-  }, [searchTerm, worldData]);
-
-  const normalizeName = (name) => {
-    return name.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "");
-  };
+  // Normalize country names for matching
+  const normalizeName = (name) =>
+    name.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "");
 
   const handleClick = (country) => {
     if (!country?.properties?.name) return;
     const name = country.properties.name;
-    console.log("🌍 Clicked country:", name);
+    console.log("🌍 Clicked:", name);
 
     const norm = normalizeName(name);
     const keys = Object.keys(channels);
 
-    // Try several name-matching patterns
     let match =
       keys.find((k) => normalizeName(k) === norm) ||
       keys.find((k) => normalizeName(k).includes(norm)) ||
@@ -75,14 +62,14 @@ export default function GengasTV() {
     }
   };
 
-  // Globe setup
+  // Initialize colorful globe
   useEffect(() => {
     if (!worldData || !globeRef.current) return;
 
     const globe = globeRef.current;
-    const wait = setInterval(() => {
+    const interval = setInterval(() => {
       if (typeof globe.polygonsData === "function") {
-        clearInterval(wait);
+        clearInterval(interval);
 
         const colorScale = (name) => {
           const seed = normalizeName(name);
@@ -99,25 +86,54 @@ export default function GengasTV() {
           .onPolygonClick(handleClick)
           .pointOfView({ altitude: 2.2 });
 
-        // Add ambient + directional light for better glow
         const scene = globe.scene();
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-        const light = new THREE.DirectionalLight(0xffffff, 0.8);
-        light.position.set(1, 1, 1);
-        scene.add(light);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(1, 1, 1);
+        scene.add(dirLight);
 
-        console.log("🌐 Globe ready with colorful map!");
+        console.log("🌐 Globe initialized successfully.");
       }
     }, 300);
 
-    return () => clearInterval(wait);
+    return () => clearInterval(interval);
   }, [worldData]);
 
-  const playChannel = (ch) => setSelectedChannel(ch);
+  // Search bar auto-suggest
+  useEffect(() => {
+    if (!worldData || searchTerm.trim() === "") {
+      setFiltered([]);
+      return;
+    }
+    const list = worldData
+      .map((c) => c.properties.name)
+      .filter((n) => n.toLowerCase().includes(searchTerm.toLowerCase()))
+      .slice(0, 10);
+    setFiltered(list);
+  }, [searchTerm, worldData]);
+
+  // HLS IPTV support
+  useEffect(() => {
+    if (selectedChannel && selectedChannel.type === "iptv") {
+      const video = document.getElementById("hls-player");
+      if (video && selectedChannel.url.endsWith(".m3u8")) {
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(selectedChannel.url);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = selectedChannel.url;
+        } else {
+          console.error("❌ HLS not supported in this browser");
+        }
+      }
+    }
+  }, [selectedChannel]);
 
   return (
     <div className="relative h-screen w-full bg-black text-white overflow-hidden">
-      {/* Background */}
+      {/* Space background */}
       <div
         style={{
           position: "absolute",
@@ -130,8 +146,8 @@ export default function GengasTV() {
         }}
       ></div>
 
-      {/* Header bar like TV Garden */}
-      <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/60 backdrop-blur-sm z-20 border-b border-gray-800">
+      {/* Header bar */}
+      <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/70 backdrop-blur-md z-20 border-b border-cyan-700">
         <h1 className="text-2xl font-bold text-cyan-400 tracking-wide">🌍 Genga TV</h1>
         <div className="relative">
           <input
@@ -175,7 +191,7 @@ export default function GengasTV() {
         )}
       </div>
 
-      {/* Sidebar for channels */}
+      {/* Sidebar */}
       {selectedCountry && (
         <div className="absolute right-0 top-0 h-full w-80 bg-black/85 p-4 overflow-y-auto z-30 backdrop-blur-lg border-l border-cyan-700">
           <h2 className="text-xl font-bold text-cyan-400 mb-3">{selectedCountry.name}</h2>
@@ -184,7 +200,7 @@ export default function GengasTV() {
               <div
                 key={i}
                 className="p-2 border-b border-gray-700 hover:bg-cyan-800 cursor-pointer transition"
-                onClick={() => playChannel(ch)}
+                onClick={() => setSelectedChannel(ch)}
               >
                 <div className="font-semibold">{ch.name}</div>
                 <div className="text-sm opacity-70">{ch.type}</div>
@@ -196,7 +212,7 @@ export default function GengasTV() {
         </div>
       )}
 
-      {/* Player window */}
+      {/* Player */}
       {selectedChannel && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 bg-black/90 rounded-xl shadow-lg p-4 w-[640px]">
           <h3 className="text-lg font-bold mb-2 text-cyan-400">{selectedChannel.name}</h3>
@@ -208,10 +224,10 @@ export default function GengasTV() {
             ></iframe>
           ) : (
             <video
+              id="hls-player"
               className="w-full h-96 rounded-lg"
               controls
               autoPlay
-              src={selectedChannel.url}
             ></video>
           )}
           <button
