@@ -2,161 +2,246 @@ import React, { useEffect, useRef, useState } from "react";
 import Globe from "react-globe.gl";
 import * as topojson from "topojson-client";
 import * as THREE from "three";
-import { geoCentroid } from "d3-geo";
 import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
   const globeRef = useRef();
-  const [countries, setCountries] = useState([]);
+  const [worldData, setWorldData] = useState(null);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [countryChannels, setCountryChannels] = useState([]);
+  const [selectedChannel, setSelectedChannel] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredCountries, setFilteredCountries] = useState([]);
 
-  // 🎨 Random color map cache
-  const colorMap = useRef({});
-
-  // 🛰 Load world data
+  // Load world data
   useEffect(() => {
     fetch("/world-110m.json")
       .then((res) => res.json())
       .then((topology) => {
-        const features = topojson.feature(topology, topology.objects.countries).features;
-        setCountries(features);
-      });
+        const features = topojson.feature(topology, topology.objects.countries)
+          .features;
+        setWorldData(features);
+      })
+      .catch((err) => console.error("Failed to load world map", err));
   }, []);
 
-  // 📡 Load channels
+  // Load channel data
   useEffect(() => {
-    (async () => {
-      const data = await loadChannels();
-      setChannels(data || {});
-      console.log("Channels loaded (keys):", Object.keys(data || {}));
-    })();
+    loadChannels().then((data) => {
+      if (data) setChannels(data);
+    });
   }, []);
 
-  // 🎯 Match clicked country → channel
-  function findChannelsForFeature(feature) {
-    if (!feature || !channels) return null;
-    const p = feature.properties || {};
-    const names = [
-      p.name, p.admin, p.NAME, p.NAME_LONG, p.name_long,
-      p.sovereignt, p.formal_en, feature.id, p.iso_a2, p.iso_a3
-    ].filter(Boolean);
+  const handleCountryClick = (country) => {
+    const name = country.properties.name;
+    setSelectedCountry(name);
+    const found = Object.keys(channels).find(
+      (key) => key.toLowerCase() === name.toLowerCase()
+    );
+    setSelectedChannel(found ? channels[found].channels[0] : null);
+  };
 
-    for (const k of Object.keys(channels)) {
-      for (const n of names) {
-        if (k.toLowerCase() === n.toLowerCase()) return channels[k];
-      }
-    }
-    for (const k of Object.keys(channels)) {
-      for (const n of names) {
-        if (k.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(k.toLowerCase()))
-          return channels[k];
-      }
-    }
-    return null;
-  }
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (!worldData) return;
+    const matches = worldData
+      .map((f) => f.properties.name)
+      .filter((n) => n.toLowerCase().includes(query.toLowerCase()));
+    setFilteredCountries(matches.slice(0, 5));
+  };
 
-  // 🪐 Handle click
-  function handleCountryClick(feature) {
-    const match = findChannelsForFeature(feature);
-    const name = feature.properties?.name || feature.properties?.admin || "Unknown";
-
-    if (match) {
-      setSelectedCountry(name);
-      setCountryChannels(match.channels || []);
-      console.log(`✅ Selected ${name} — ${match.channels?.length || 0} channels`);
-    } else {
-      setSelectedCountry(name);
-      setCountryChannels([]);
-      console.warn(`⚠️ No channels found for ${name}`);
+  const handleSearchSelect = (countryName) => {
+    const feature = worldData.find(
+      (f) => f.properties.name.toLowerCase() === countryName.toLowerCase()
+    );
+    if (feature && globeRef.current) {
+      const { lat, lng } = {
+        lat: feature.properties.latitude || 0,
+        lng: feature.properties.longitude || 0,
+      };
+      globeRef.current.pointOfView({ lat, lng, altitude: 1.8 }, 1000);
+      handleCountryClick(feature);
     }
+    setFilteredCountries([]);
+    setSearchQuery("");
+  };
 
-    // Center globe
-    try {
-      const [lon, lat] = geoCentroid(feature);
-      if (globeRef.current && lat && lon) {
-        globeRef.current.pointOfView({ lat, lng: lon, altitude: 1.6 }, 1000);
-      }
-    } catch (e) {
-      console.warn("Centering failed:", e);
-    }
-  }
-
-  // 🎨 Color each country randomly
-  function getCountryColor(feature) {
-    const id = feature.id;
-    if (!colorMap.current[id]) {
-      const hue = Math.floor(Math.random() * 360);
-      colorMap.current[id] = `hsl(${hue}, 70%, 55%)`;
-    }
-    return colorMap.current[id];
-  }
+  const channelList =
+    selectedCountry && channels[selectedCountry]
+      ? channels[selectedCountry].channels
+      : [];
 
   return (
-    <div style={{ width: "100vw", height: "100vh", background: "radial-gradient(circle at center, #000010, #000)" }}>
-      <Globe
-        ref={globeRef}
-        backgroundColor="rgba(0,0,0,1)"
-        globeMaterial={
-          new THREE.MeshPhongMaterial({
-            color: 0x111111,
-            emissive: 0x0,
-            shininess: 0.7,
-            transparent: true,
-            opacity: 1
-          })
-        }
-        polygonsData={countries}
-        polygonCapColor={(d) => getCountryColor(d)}
-        polygonSideColor={() => "rgba(0,0,0,0.15)"}
-        polygonStrokeColor={() => "#111"}
-        onPolygonClick={handleCountryClick}
-        onPolygonHover={(hoverD) =>
-          (document.body.style.cursor = hoverD ? "pointer" : "default")
-        }
-        polygonLabel={(d) => `<b>${d.properties.name}</b>`}
-        autoRotate={true}
-        autoRotateSpeed={0.6}
-      />
+    <div
+      style={{
+        height: "100vh",
+        width: "100vw",
+        background:
+          "radial-gradient(circle at center, #020617, #000) fixed",
+        overflow: "hidden",
+        position: "relative",
+        color: "white",
+      }}
+    >
+      {/* App Header */}
+      <div
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 20,
+          right: 20,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          zIndex: 5,
+        }}
+      >
+        <h2 style={{ fontSize: "1.5rem", color: "#93c5fd" }}>
+          🌍 Genga Garden TV
+        </h2>
+        <div style={{ position: "relative" }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="Search country..."
+            style={{
+              padding: "8px 12px",
+              borderRadius: "8px",
+              border: "none",
+              outline: "none",
+              fontSize: "14px",
+            }}
+          />
+          {filteredCountries.length > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                background: "#1e293b",
+                top: "110%",
+                left: 0,
+                right: 0,
+                borderRadius: "8px",
+                overflow: "hidden",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+              }}
+            >
+              {filteredCountries.map((country) => (
+                <div
+                  key={country}
+                  onClick={() => handleSearchSelect(country)}
+                  style={{
+                    padding: "8px",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #334155",
+                  }}
+                >
+                  {country}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
-      {/* 🧠 Sidebar (only when country selected) */}
+      {/* Globe */}
+      {worldData && (
+        <Globe
+          ref={globeRef}
+          globeMaterial={new THREE.MeshPhongMaterial({
+            color: "#1d4ed8",
+            emissive: "#0f172a",
+            shininess: 10,
+            transparent: false,
+          })}
+          backgroundColor="rgba(0,0,0,0)"
+          width={window.innerWidth}
+          height={window.innerHeight}
+          hexPolygonsData={worldData}
+          hexPolygonResolution={3}
+          hexPolygonMargin={0.5}
+          hexPolygonColor={() =>
+            `hsl(${Math.random() * 360}, 70%, 55%)`
+          }
+          onHexPolygonClick={handleCountryClick}
+        />
+      )}
+
+      {/* Sidebar */}
       {selectedCountry && (
         <div
           style={{
             position: "absolute",
-            top: "50%",
-            right: "2%",
-            transform: "translateY(-50%)",
+            right: 0,
+            top: 0,
             width: "320px",
-            maxHeight: "85vh",
-            background: "rgba(0,0,0,0.85)",
-            color: "white",
-            border: "1px solid cyan",
-            borderRadius: "12px",
-            padding: "12px",
+            height: "100%",
+            background: "rgba(15,23,42,0.95)",
+            padding: "20px",
             overflowY: "auto",
-            boxShadow: "0 0 20px cyan",
-            transition: "0.3s ease-in-out",
+            color: "white",
+            backdropFilter: "blur(8px)",
+            transition: "transform 0.4s ease-in-out",
+            transform: selectedCountry ? "translateX(0)" : "translateX(100%)",
           }}
         >
-          <h2 style={{ color: "cyan", marginBottom: "10px" }}>{selectedCountry}</h2>
-          {countryChannels.length === 0 ? (
-            <p>No channels available</p>
-          ) : (
-            countryChannels.map((ch, i) => (
+          <h3 style={{ color: "#93c5fd" }}>{selectedCountry}</h3>
+          {channelList.length > 0 ? (
+            channelList.map((ch, i) => (
               <div
                 key={i}
                 style={{
-                  marginBottom: "12px",
-                  borderBottom: "1px solid rgba(255,255,255,0.1)",
-                  paddingBottom: "6px",
+                  padding: "8px",
+                  marginTop: "6px",
+                  background: "#1e3a8a",
+                  borderRadius: "6px",
+                  cursor: "pointer",
                 }}
+                onClick={() => setSelectedChannel(ch)}
               >
-                <b>{ch.name}</b>
-                <p style={{ fontSize: "12px", opacity: 0.8 }}>{ch.language?.toUpperCase()}</p>
+                {ch.name}
               </div>
             ))
+          ) : (
+            <p>No channels available</p>
+          )}
+        </div>
+      )}
+
+      {/* Video Player */}
+      {selectedChannel && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            background: "#000",
+            padding: "12px",
+            borderRadius: "10px",
+            zIndex: 10,
+            boxShadow: "0 0 20px rgba(0,0,0,0.8)",
+            animation: "fadeIn 0.5s ease",
+          }}
+        >
+          {selectedChannel.type === "youtube" ? (
+            <iframe
+              src={selectedChannel.url}
+              title={selectedChannel.name}
+              width="640"
+              height="360"
+              allow="autoplay; fullscreen"
+              style={{ border: "none", borderRadius: "10px" }}
+            />
+          ) : (
+            <video
+              src={selectedChannel.url}
+              controls
+              autoPlay
+              width="640"
+              height="360"
+              style={{ borderRadius: "10px" }}
+            />
           )}
         </div>
       )}
