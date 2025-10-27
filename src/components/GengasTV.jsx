@@ -16,7 +16,7 @@ export default function GengasTV() {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Load map + channel data
+  // Load map and channel data
   useEffect(() => {
     (async () => {
       try {
@@ -32,25 +32,40 @@ export default function GengasTV() {
     })();
   }, []);
 
-  // Country click
+  // Match country name smartly
+  const findCountryKey = (name) => {
+    const lower = name.toLowerCase();
+    const exact = Object.keys(channels).find(
+      (key) => key.toLowerCase() === lower
+    );
+    if (exact) return exact;
+
+    const partial = Object.keys(channels).find((key) =>
+      key.toLowerCase().includes(lower)
+    );
+    return partial || null;
+  };
+
+  // When clicking a country on the globe
   const handleCountryClick = (d) => {
     const name = d.properties.name;
-    if (channels[name]) setSelectedCountry(name);
+    const match = findCountryKey(name);
+    if (match) setSelectedCountry(match);
     else {
-      const key = Object.keys(channels).find(
-        (c) => c.toLowerCase() === name.toLowerCase()
-      );
-      if (key) setSelectedCountry(key);
-      else setSelectedCountry(null);
+      console.log(`No match for ${name}`);
+      setSelectedCountry(null);
     }
     setSelectedChannel(null);
   };
 
-  // Channel click
-  const handleChannelSelect = (ch) => setSelectedChannel(ch);
+  // When clicking a channel
+  const handleChannelSelect = (ch) => {
+    setSelectedChannel(ch);
+  };
+
   const closePlayer = () => setSelectedChannel(null);
 
-  // Search handler
+  // Search & auto-suggest
   const handleSearch = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
@@ -70,23 +85,20 @@ export default function GengasTV() {
     setSearchTerm(country);
   };
 
-  if (loading) {
+  if (loading)
     return (
-      <div className="flex h-screen w-full items-center justify-center text-cyan-400 bg-black text-xl">
-        Loading Genga TV …
+      <div className="flex h-screen items-center justify-center text-cyan-400 bg-black text-xl">
+        Loading Genga TV...
       </div>
     );
-  }
 
   return (
-    <div className="relative w-full h-screen text-white overflow-hidden bg-black">
+    <div className="relative w-full h-screen overflow-hidden text-white bg-black">
       {/* Top Bar */}
       <div className="absolute top-0 left-0 w-full flex justify-between items-center px-6 py-3 bg-black/60 backdrop-blur-md border-b border-cyan-700 z-50">
         <div className="flex items-center gap-2">
           <FaGlobe className="text-cyan-400" />
-          <h1 className="text-cyan-400 font-bold text-2xl tracking-wide">
-            Genga TV
-          </h1>
+          <h1 className="text-cyan-400 font-bold text-2xl">Genga TV</h1>
         </div>
         <div className="relative">
           <div className="flex items-center bg-white/10 px-3 py-2 rounded-lg gap-2">
@@ -190,12 +202,11 @@ export default function GengasTV() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/80 z-50"
-            onClick={closePlayer}
+            className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-30"
           >
             <div
+              className="relative w-[80%] max-w-3xl bg-black border border-cyan-500 rounded-2xl shadow-xl"
               onClick={(e) => e.stopPropagation()}
-              className="relative w-[85%] max-w-3xl bg-black border border-cyan-500 rounded-2xl shadow-xl"
             >
               <button
                 onClick={closePlayer}
