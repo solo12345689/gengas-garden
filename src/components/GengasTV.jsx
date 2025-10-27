@@ -5,230 +5,170 @@ import Hls from "hls.js";
 import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
-  const globeRef = useRef();
+  const globeEl = useRef();
   const [countries, setCountries] = useState([]);
-  const [channels, setChannels] = useState(null);
+  const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [currentChannel, setCurrentChannel] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [countryChannels, setCountryChannels] = useState([]);
 
-  // Safe color generator for colorful map
-  const getColorSafe = (id) => {
-    const n = Number(id) || (id && id.toString().charCodeAt(0)) || 1;
-    const hue = (n * 47) % 360;
-    return `hsl(${hue},70%,55%)`;
-  };
-
+  // Load world and channels
   useEffect(() => {
     (async () => {
       try {
-        // Load world map
-        const r = await fetch("/world-110m.json");
-        const topo = await r.json();
-        const features = topojson.feature(topo, topo.objects.countries).features;
-        setCountries(features);
-
-        // Load channels
-        const ch = await loadChannels();
-        if (ch) setChannels(ch);
+        // Load world topology (political borders)
+        const worldData = await fetch("/world-110m.json").then((res) =>
+          res.json()
+        );
+        const countriesData = topojson.feature(
+          worldData,
+          worldData.objects.countries
+        ).features;
+        setCountries(countriesData);
+        console.log(`Parsed ${countriesData.length} country features`);
       } catch (err) {
-        console.error("Error loading world/channels:", err);
+        console.error("Failed to load world JSON", err);
       }
-      setLoading(false);
+
+      // Load channel data
+      const ch = await loadChannels();
+      if (ch) {
+        setChannels(ch);
+        console.log(
+          `Channels loaded (keys: ${Object.keys(ch).slice(0, 10).join(", ")} ...)`
+        );
+      } else {
+        console.error("Failed to load channels");
+      }
     })();
   }, []);
-// Click handler (ignore duplicate selections)
-const handleClick = (feat) => {
-  if (!feat || !channels) return;
 
-  const name = feat.properties?.name?.trim();
-  if (!name) return;
+  // Handle click on a country
+  const handleClick = (country) => {
+    const countryName = country?.properties?.name;
+    if (!countryName) return;
 
-  // 👇 prevent re-triggering same country during globe moves
-  if (selectedCountry && selectedCountry.name === name) {
-    return; // ignore duplicate clicks or zoom triggers
-  }
+    console.log(`Clicked country: ${countryName}`);
 
-  const iso_a2 = feat.properties?.iso_a2 || "";
-  const iso_a3 = feat.properties?.iso_a3 || "";
-  const id = feat.id?.toString() || "";
+    setSelectedCountry(countryName);
 
-  const keysToTry = [name, iso_a2, iso_a3, id].filter(Boolean);
-  let matched = null;
+    // Match by direct or partial key
+    const directMatch = channels[countryName];
+    const altMatch =
+      Object.keys(channels).find(
+        (key) => key.toLowerCase().includes(countryName.toLowerCase())
+      ) || null;
 
-  for (const k of keysToTry) {
-    const match = Object.keys(channels).find(
-      (x) => x.toLowerCase() === k.toLowerCase()
-    );
-    if (match) {
-      matched = channels[match];
-      break;
+    const matchedData = directMatch || (altMatch ? channels[altMatch] : null);
+
+    if (matchedData && matchedData.channels?.length) {
+      setCountryChannels(matchedData.channels);
+    } else {
+      setCountryChannels([]);
+      console.warn(`No match for ${countryName}`);
     }
-  }
-
-  // fallback partial match
-  if (!matched) {
-    matched = Object.entries(channels).find(([k]) =>
-      name.toLowerCase().includes(k.toLowerCase())
-    )?.[1];
-  }
-
-  if (matched && matched.channels?.length) {
-    setSelectedCountry({ name, channels: matched.channels });
-    setCurrentChannel(matched.channels[0]);
-  } else {
-    setSelectedCountry({ name, channels: [] });
-    setCurrentChannel(null);
-  }
-};
   };
 
-  // HLS player setup
-  useEffect(() => {
-    if (!currentChannel) return;
-    if (currentChannel.type === "iptv" && currentChannel.url?.endsWith(".m3u8")) {
-      const video = document.getElementById("livePlayer");
-      if (!video) return;
-      if (Hls.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(currentChannel.url);
-        hls.attachMedia(video);
-        return () => hls.destroy();
-      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = currentChannel.url;
-      }
-    }
-  }, [currentChannel]);
-
-  if (loading) {
-    return (
-      <div
-        style={{
-          height: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#000",
-          color: "#0ff",
-          fontSize: "1.5em",
-        }}
-      >
-        Loading Genga Garden TV...
-      </div>
-    );
-  }
+  // Colorful countries
+  const getCountryColor = (d) => {
+    const seed = d.properties.name.length;
+    const hue = (seed * 47) % 360;
+    return `hsl(${hue}, 80%, 55%)`;
+  };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        background: "#000",
-        color: "#fff",
-      }}
-    >
-      {/* Globe Section */}
-      <div style={{ flex: 1 }}>
-        <Globe
-          ref={globeRef}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
-          polygonsData={countries}
-          polygonCapColor={(d) => getColorSafe(d.id)}
-          polygonSideColor={() => "rgba(0,0,0,0.15)"}
-          polygonStrokeColor={() => "#111"}
-          polygonLabel={(d) => d.properties?.name || ""}
-          onPolygonClick={handleClick}
-          polygonsTransitionDuration={300}
-          atmosphereColor="deepskyblue"
-          atmosphereAltitude={0.25}
-        />
-      </div>
-
-      {/* Sidebar */}
+    <div style={{ position: "relative", height: "100vh", background: "#000" }}>
       <div
         style={{
-          width: 360,
-          background: "#071018",
-          borderLeft: "2px solid #00ffcc",
-          padding: 20,
-          overflowY: "auto",
+          position: "absolute",
+          top: "10px",
+          left: "10px",
+          color: "white",
+          fontSize: "20px",
+          fontWeight: "bold",
+          zIndex: 10,
         }}
       >
-        <h1
+        🌍 Genga Garden TV
+      </div>
+
+      <Globe
+        ref={globeEl}
+        globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
+        backgroundColor="#000"
+        polygonsData={countries}
+        polygonCapColor={getCountryColor}
+        polygonSideColor={() => "rgba(0, 100, 200, 0.15)"}
+        polygonStrokeColor={() => "#111"}
+        onPolygonClick={handleClick}
+        polygonAltitude={0.02}
+        width={window.innerWidth}
+        height={window.innerHeight}
+      />
+
+      {selectedCountry && (
+        <div
           style={{
-            textAlign: "center",
-            color: "#00ffcc",
-            fontSize: "1.4em",
-            marginBottom: 16,
+            position: "absolute",
+            top: "70px",
+            right: "0",
+            width: "320px",
+            height: "calc(100vh - 70px)",
+            background: "rgba(0,0,0,0.8)",
+            color: "white",
+            overflowY: "auto",
+            padding: "15px",
+            borderLeft: "2px solid #0ff",
           }}
         >
-          🌍 Genga Garden TV
-        </h1>
-
-        {selectedCountry ? (
-          <>
-            <h2 style={{ color: "#0ff", marginBottom: 8 }}>
-              {selectedCountry.name}
-            </h2>
-            {selectedCountry.channels.length > 0 ? (
-              <>
-                <ul style={{ listStyle: "none", padding: 0 }}>
-                  {selectedCountry.channels.map((ch, i) => (
-                    <li
-                      key={i}
-                      style={{
-                        background:
-                          currentChannel?.name === ch.name
-                            ? "#00ffcc33"
-                            : "#111",
-                        margin: "8px 0",
-                        padding: "8px",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => setCurrentChannel(ch)}
-                    >
-                      <strong>{ch.name}</strong>
-                      <div style={{ fontSize: "0.8em", opacity: 0.7 }}>
-                        {ch.language?.toUpperCase() || ""}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
-                {currentChannel && (
-                  <div style={{ marginTop: "12px" }}>
-                    {currentChannel.type === "youtube" ? (
-                      <iframe
-                        src={currentChannel.url}
-                        width="100%"
-                        height="200"
-                        title={currentChannel.name}
-                        allowFullScreen
-                        style={{ borderRadius: "8px" }}
-                      ></iframe>
-                    ) : (
-                      <video
-                        id="livePlayer"
-                        controls
-                        autoPlay
-                        width="100%"
-                        height="200"
-                        style={{ borderRadius: "8px", background: "#000" }}
-                      />
-                    )}
-                  </div>
+          <h2 style={{ marginTop: 0 }}>{selectedCountry}</h2>
+          {countryChannels.length > 0 ? (
+            countryChannels.map((ch, i) => (
+              <div
+                key={i}
+                style={{
+                  marginBottom: "12px",
+                  paddingBottom: "8px",
+                  borderBottom: "1px solid #333",
+                }}
+              >
+                <strong>{ch.name}</strong>
+                <br />
+                <small>{ch.language?.toUpperCase() || "N/A"}</small>
+                <br />
+                {ch.type === "youtube" ? (
+                  <iframe
+                    width="100%"
+                    height="200"
+                    src={ch.url}
+                    title={ch.name}
+                    allow="autoplay; encrypted-media"
+                  ></iframe>
+                ) : (
+                  <video
+                    width="100%"
+                    height="200"
+                    controls
+                    autoPlay
+                    muted
+                    onError={() =>
+                      console.error(`Failed to load video: ${ch.url}`)
+                    }
+                    ref={(el) => {
+                      if (el && Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(ch.url);
+                        hls.attachMedia(el);
+                      }
+                    }}
+                  />
                 )}
-              </>
-            ) : (
-              <p style={{ opacity: 0.7 }}>No channels available</p>
-            )}
-          </>
-        ) : (
-          <p style={{ opacity: 0.7 }}>Select a country to view channels</p>
-        )}
-            </div>
+              </div>
+            ))
+          ) : (
+            <p>No channels available</p>
+          )}
+        </div>
+      )}
     </div>
   );
-} // ✅ this closes the function
-export default GengasTV; // ✅ final line
+}
