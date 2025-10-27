@@ -5,7 +5,7 @@ import { loadChannels } from "../utils/fetchChannels";
 import * as THREE from "three";
 
 export default function GengasTV() {
-  const globeRef = useRef(null);
+  const globeRef = useRef();
   const [worldData, setWorldData] = useState(null);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
@@ -42,7 +42,6 @@ export default function GengasTV() {
     setFiltered(list);
   }, [searchTerm, worldData]);
 
-  // Country click handler
   const handleClick = (country) => {
     if (!country?.properties?.name) return;
     const name = country.properties.name.trim();
@@ -60,29 +59,33 @@ export default function GengasTV() {
     }
   };
 
-  // Initialize globe after mount
+  // Initialize Globe once it's ready
   useEffect(() => {
     if (!worldData || !globeRef.current) return;
 
-    const g = globeRef.current;
-    try {
-      g.polygonsData(worldData)
-        .polygonCapColor(() => "#" + Math.floor(Math.random() * 16777215).toString(16))
-        .polygonSideColor(() => "rgba(0,0,0,0.2)")
-        .polygonStrokeColor(() => "#111")
-        .polygonAltitude(0.01)
-        .onPolygonClick(handleClick);
-    } catch (err) {
-      console.warn("⚠️ Globe init skipped (not ready yet):", err.message);
-    }
+    const waitForGlobe = setInterval(() => {
+      const g = globeRef.current;
+      if (g && typeof g.polygonsData === "function") {
+        clearInterval(waitForGlobe);
+        g.polygonsData(worldData)
+          .polygonCapColor(() => "#" + Math.floor(Math.random() * 16777215).toString(16))
+          .polygonSideColor(() => "rgba(0,0,0,0.2)")
+          .polygonStrokeColor(() => "#111")
+          .polygonAltitude(0.01)
+          .onPolygonClick(handleClick);
+
+        console.log("🌐 Globe initialized successfully!");
+      }
+    }, 300);
+
+    return () => clearInterval(waitForGlobe);
   }, [worldData, channels]);
 
-  // Channel play
   const playChannel = (ch) => setSelectedChannel(ch);
 
   return (
     <div className="relative h-screen w-full bg-black text-white overflow-hidden">
-      {/* Space background */}
+      {/* Starry background */}
       <div
         style={{
           position: "absolute",
@@ -171,7 +174,12 @@ export default function GengasTV() {
               allowFullScreen
             ></iframe>
           ) : (
-            <video className="w-full h-96 rounded-lg" controls autoPlay src={selectedChannel.url}></video>
+            <video
+              className="w-full h-96 rounded-lg"
+              controls
+              autoPlay
+              src={selectedChannel.url}
+            ></video>
           )}
           <button
             className="mt-3 bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded"
