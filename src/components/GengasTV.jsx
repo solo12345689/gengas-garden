@@ -13,7 +13,7 @@ export default function GengasTV() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filtered, setFiltered] = useState([]);
 
-  // Load world map
+  // Load world polygons
   useEffect(() => {
     fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then((res) => res.json())
@@ -23,18 +23,23 @@ export default function GengasTV() {
       });
   }, []);
 
-  // Load channels
+  // Load channel list
   useEffect(() => {
     (async () => {
-      const ch = await loadChannels();
-      console.log("✅ Channels loaded:", Object.keys(ch).slice(0, 10));
-      setChannels(ch || {});
+      const data = await loadChannels();
+      if (data) {
+        console.log("✅ Channels loaded:", Object.keys(data).slice(0, 10));
+        setChannels(data);
+      }
     })();
   }, []);
 
-  // Search
+  // Search countries dynamically
   useEffect(() => {
-    if (!worldData) return;
+    if (!worldData || searchTerm.trim() === "") {
+      setFiltered([]);
+      return;
+    }
     const list = worldData
       .map((c) => c.properties.name)
       .filter((n) => n.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -42,50 +47,77 @@ export default function GengasTV() {
     setFiltered(list);
   }, [searchTerm, worldData]);
 
+  const normalizeName = (name) => {
+    return name.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "");
+  };
+
   const handleClick = (country) => {
     if (!country?.properties?.name) return;
-    const name = country.properties.name.trim();
-    console.log("🌍 Clicked:", name);
+    const name = country.properties.name;
+    console.log("🌍 Clicked country:", name);
 
+    const norm = normalizeName(name);
     const keys = Object.keys(channels);
+
+    // Try several name-matching patterns
     let match =
-      keys.find((k) => k.toLowerCase() === name.toLowerCase()) ||
-      keys.find((k) => k.toLowerCase().includes(name.toLowerCase()));
+      keys.find((k) => normalizeName(k) === norm) ||
+      keys.find((k) => normalizeName(k).includes(norm)) ||
+      keys.find((k) => norm.includes(normalizeName(k)));
 
     if (match) {
-      setSelectedCountry({ name: match, channels: channels[match].channels || [] });
+      const ch = channels[match]?.channels || [];
+      console.log(`📺 ${match} → ${ch.length} channels`);
+      setSelectedCountry({ name: match, channels: ch });
     } else {
+      console.warn("⚠️ No match found for", name);
       setSelectedCountry({ name, channels: [] });
     }
   };
 
-  // Initialize Globe once it's ready
+  // Globe setup
   useEffect(() => {
     if (!worldData || !globeRef.current) return;
 
-    const waitForGlobe = setInterval(() => {
-      const g = globeRef.current;
-      if (g && typeof g.polygonsData === "function") {
-        clearInterval(waitForGlobe);
-        g.polygonsData(worldData)
-          .polygonCapColor(() => "#" + Math.floor(Math.random() * 16777215).toString(16))
-          .polygonSideColor(() => "rgba(0,0,0,0.2)")
+    const globe = globeRef.current;
+    const wait = setInterval(() => {
+      if (typeof globe.polygonsData === "function") {
+        clearInterval(wait);
+
+        const colorScale = (name) => {
+          const seed = normalizeName(name);
+          const hue = (seed.charCodeAt(0) * 37) % 360;
+          return `hsl(${hue}, 80%, 55%)`;
+        };
+
+        globe
+          .polygonsData(worldData)
+          .polygonCapColor((d) => colorScale(d.properties.name))
+          .polygonSideColor(() => "rgba(80,80,80,0.3)")
           .polygonStrokeColor(() => "#111")
           .polygonAltitude(0.01)
-          .onPolygonClick(handleClick);
+          .onPolygonClick(handleClick)
+          .pointOfView({ altitude: 2.2 });
 
-        console.log("🌐 Globe initialized successfully!");
+        // Add ambient + directional light for better glow
+        const scene = globe.scene();
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        const light = new THREE.DirectionalLight(0xffffff, 0.8);
+        light.position.set(1, 1, 1);
+        scene.add(light);
+
+        console.log("🌐 Globe ready with colorful map!");
       }
     }, 300);
 
-    return () => clearInterval(waitForGlobe);
-  }, [worldData, channels]);
+    return () => clearInterval(wait);
+  }, [worldData]);
 
   const playChannel = (ch) => setSelectedChannel(ch);
 
   return (
     <div className="relative h-screen w-full bg-black text-white overflow-hidden">
-      {/* Starry background */}
+      {/* Background */}
       <div
         style={{
           position: "absolute",
@@ -98,13 +130,14 @@ export default function GengasTV() {
         }}
       ></div>
 
-      {/* Top bar */}
-      <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/50 backdrop-blur-sm z-20 border-b border-gray-800">
-        <h1 className="text-2xl font-bold text-cyan-400">🌍 Genga TV</h1>
+      {/* Header bar like TV Garden */}
+      <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/60 backdrop-blur-sm z-20 border-b border-gray-800">
+        <h1 className="text-2xl font-bold text-cyan-400 tracking-wide">🌍 Genga TV</h1>
         <div className="relative">
           <input
+            type="text"
+            placeholder="Filter Countries..."
             className="px-3 py-2 rounded bg-black/70 text-white outline-none w-64"
-            placeholder="Search countries..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -136,21 +169,21 @@ export default function GengasTV() {
         {worldData && (
           <Globe
             ref={globeRef}
-            globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
             backgroundColor="rgba(0,0,0,0)"
           />
         )}
       </div>
 
-      {/* Sidebar */}
+      {/* Sidebar for channels */}
       {selectedCountry && (
-        <div className="absolute right-0 top-0 h-full w-80 bg-black/80 p-4 overflow-y-auto z-30 backdrop-blur-lg">
+        <div className="absolute right-0 top-0 h-full w-80 bg-black/85 p-4 overflow-y-auto z-30 backdrop-blur-lg border-l border-cyan-700">
           <h2 className="text-xl font-bold text-cyan-400 mb-3">{selectedCountry.name}</h2>
           {selectedCountry.channels?.length > 0 ? (
             selectedCountry.channels.map((ch, i) => (
               <div
                 key={i}
-                className="p-2 border-b border-gray-700 hover:bg-cyan-800 cursor-pointer"
+                className="p-2 border-b border-gray-700 hover:bg-cyan-800 cursor-pointer transition"
                 onClick={() => playChannel(ch)}
               >
                 <div className="font-semibold">{ch.name}</div>
@@ -163,7 +196,7 @@ export default function GengasTV() {
         </div>
       )}
 
-      {/* Player */}
+      {/* Player window */}
       {selectedChannel && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 bg-black/90 rounded-xl shadow-lg p-4 w-[640px]">
           <h3 className="text-lg font-bold mb-2 text-cyan-400">{selectedChannel.name}</h3>
