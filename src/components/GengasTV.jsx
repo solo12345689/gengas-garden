@@ -1,91 +1,41 @@
 import React, { useEffect, useRef, useState } from "react";
-import * as d3 from "d3";
+import Globe from "react-globe.gl";
 import * as topojson from "topojson-client";
 import { loadChannels } from "../utils/fetchChannels";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaGlobe, FaSearch, FaTimes, FaPlay } from "react-icons/fa";
-import * as THREE from "three";
+import { FaGlobe, FaSearch, FaTimes } from "react-icons/fa";
 
 export default function GengasTV() {
-  const globeRef = useRef(null);
+  const globeRef = useRef();
   const [worldData, setWorldData] = useState(null);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [filteredCountries, setFilteredCountries] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedChannel, setSelectedChannel] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredCountries, setFilteredCountries] = useState([]);
 
-  // Load map and channel data
+  // 🌍 Load map & channels
   useEffect(() => {
-    Promise.all([
-      d3.json("/data/world-110m.json"),
-      loadChannels(),
-    ]).then(([world, ch]) => {
-      setWorldData(topojson.feature(world, world.objects.countries));
-      setChannels(ch);
-      setFilteredCountries(Object.keys(ch));
-    });
+    (async () => {
+      try {
+        const world = await fetch("/world-110m.json").then((r) => r.json());
+        const ch = await loadChannels();
+        const features = topojson.feature(world, world.objects.countries);
+        setWorldData(features);
+        setChannels(ch);
+        setFilteredCountries(Object.keys(ch));
+      } catch (err) {
+        console.error("Error loading data:", err);
+      }
+    })();
   }, []);
 
-  // Three.js Globe setup
-  useEffect(() => {
-    if (!globeRef.current || !worldData) return;
-
-    const container = globeRef.current;
-    container.innerHTML = "";
-
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    container.appendChild(renderer.domElement);
-
-    const globe = new THREE.Mesh(
-      new THREE.SphereGeometry(5, 64, 64),
-      new THREE.MeshPhongMaterial({
-        color: 0x000000,
-        shininess: 50,
-        emissive: 0x111111,
-      })
-    );
-    scene.add(globe);
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    const pointLight = new THREE.PointLight(0xffffff, 1);
-    pointLight.position.set(10, 10, 10);
-    scene.add(ambientLight, pointLight);
-
-    camera.position.z = 10;
-    function animate() {
-      requestAnimationFrame(animate);
-      globe.rotation.y += 0.001;
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    // handle resize
-    window.addEventListener("resize", () => {
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    });
-
-    return () => {
-      renderer.dispose();
-    };
-  }, [worldData]);
-
-  // Handle search and autosuggest
+  // 🔎 Search
   const handleSearch = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
-    if (term.trim() === "") {
-      setFilteredCountries(Object.keys(channels));
-    } else {
+    if (!term.trim()) setFilteredCountries(Object.keys(channels));
+    else {
       const filtered = Object.keys(channels).filter((c) =>
         c.toLowerCase().includes(term.toLowerCase())
       );
@@ -93,65 +43,91 @@ export default function GengasTV() {
     }
   };
 
-  // Handle selecting country
-  const handleCountrySelect = (country) => {
-    setSelectedCountry(country);
+  // 🗺 Click on a country
+  const handleCountryClick = (d) => {
+    const name = d.properties.name;
+    if (channels[name]) {
+      setSelectedCountry(name);
+    } else {
+      console.log(`No match for ${name}`);
+      setSelectedCountry(null);
+    }
     setSelectedChannel(null);
   };
 
-  // Handle selecting a channel
-  const handleChannelSelect = (channel) => {
-    setSelectedChannel(channel);
-  };
-
-  // Close player
+  // 🎥 Select a channel
+  const handleChannelSelect = (ch) => setSelectedChannel(ch);
   const closePlayer = () => setSelectedChannel(null);
 
   return (
-    <div
-      className="relative w-full h-screen overflow-hidden text-white"
-      style={{
-        background: "radial-gradient(circle at center, #01010a, #000)",
-      }}
-    >
-      {/* --- Top Bar --- */}
-      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-6 py-3 bg-black/40 backdrop-blur-sm text-lg font-semibold z-50">
+    <div className="relative w-full h-screen text-white overflow-hidden">
+      {/* ✨ Starry Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#020617,_#000)]">
+        <canvas
+          id="stars"
+          className="absolute inset-0"
+          style={{ zIndex: 0 }}
+        ></canvas>
+      </div>
+
+      {/* 🔝 Top Navigation Bar */}
+      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-6 py-3 bg-black/40 backdrop-blur-md z-50">
         <div className="flex items-center gap-2">
           <FaGlobe className="text-cyan-400" />
-          <span className="text-cyan-400 text-2xl font-bold">Genga TV</span>
+          <h1 className="text-cyan-400 font-bold text-2xl tracking-wide">
+            Genga TV
+          </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center bg-white/10 px-3 py-2 rounded-lg gap-2">
+          <FaSearch className="text-cyan-400" />
           <input
             type="text"
-            placeholder="Filter Countries..."
+            placeholder="Filter countries..."
             value={searchTerm}
             onChange={handleSearch}
-            className="px-3 py-2 rounded-lg text-black w-64"
+            className="bg-transparent text-white focus:outline-none placeholder-gray-400 w-56"
           />
-          <FaSearch className="text-cyan-300 text-xl" />
         </div>
       </div>
 
-      {/* --- Globe --- */}
-      <div
-        ref={globeRef}
-        className="absolute inset-0 flex justify-center items-center"
-      ></div>
+      {/* 🌐 Interactive Globe */}
+      <div className="absolute inset-0" style={{ zIndex: 1 }}>
+        {worldData && (
+          <Globe
+            ref={globeRef}
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+            backgroundColor="rgba(0,0,0,0)"
+            polygonsData={worldData.features.filter(
+              (d) => d.properties.ISO_A2 !== "AQ"
+            )}
+            polygonCapColor={() =>
+              `rgba(${Math.floor(Math.random() * 255)}, ${
+                Math.floor(Math.random() * 255)
+              }, ${Math.floor(Math.random() * 255)}, 0.8)`
+            }
+            polygonSideColor={() => "rgba(0,0,0,0.15)"}
+            polygonStrokeColor={() => "#111"}
+            polygonLabel={({ properties: d }) => `${d.name}`}
+            onPolygonClick={handleCountryClick}
+          />
+        )}
+      </div>
 
-      {/* --- Sidebar --- */}
+      {/* 📜 Sidebar */}
       <AnimatePresence>
-        {filteredCountries && (
+        {selectedCountry && (
           <motion.div
             initial={{ x: 400, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 400, opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className="absolute right-0 top-16 w-80 h-[90vh] bg-black/60 backdrop-blur-md overflow-y-auto p-4 border-l border-cyan-500"
+            className="absolute right-0 top-16 w-80 h-[85vh] bg-black/70 backdrop-blur-md overflow-y-auto p-4 border-l border-cyan-500 z-50"
           >
-            <h2 className="text-cyan-300 mb-4 text-xl font-semibold">
-              {selectedCountry || "Select a Country"}
+            <h2 className="text-cyan-300 mb-3 text-lg font-semibold">
+              {selectedCountry}
             </h2>
-            {selectedCountry && channels[selectedCountry] ? (
+            {channels[selectedCountry] &&
+            channels[selectedCountry].channels.length > 0 ? (
               channels[selectedCountry].channels.map((ch, i) => (
                 <div
                   key={i}
@@ -162,21 +138,13 @@ export default function GengasTV() {
                 </div>
               ))
             ) : (
-              filteredCountries.map((c, i) => (
-                <div
-                  key={i}
-                  onClick={() => handleCountrySelect(c)}
-                  className="cursor-pointer border-b border-gray-800 py-1 hover:text-cyan-400 transition"
-                >
-                  {c}
-                </div>
-              ))
+              <p className="text-gray-400">No channels available</p>
             )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* --- Player Modal --- */}
+      {/* 🎥 Video Player */}
       <AnimatePresence>
         {selectedChannel && (
           <motion.div
@@ -197,12 +165,21 @@ export default function GengasTV() {
                 {selectedChannel.name}
               </div>
               <div className="w-full aspect-video">
-                <video
-                  src={selectedChannel.url}
-                  controls
-                  autoPlay
-                  className="w-full h-full rounded-b-2xl"
-                />
+                {selectedChannel.type === "youtube" ? (
+                  <iframe
+                    src={selectedChannel.url}
+                    title={selectedChannel.name}
+                    allowFullScreen
+                    className="w-full h-full rounded-b-2xl"
+                  />
+                ) : (
+                  <video
+                    src={selectedChannel.url}
+                    controls
+                    autoPlay
+                    className="w-full h-full rounded-b-2xl"
+                  />
+                )}
               </div>
             </div>
           </motion.div>
