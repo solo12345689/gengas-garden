@@ -10,10 +10,12 @@ export default function GengasTV() {
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [countryChannels, setCountryChannels] = useState([]);
+  const [activeChannel, setActiveChannel] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
 
-  // Load world and channels
+  // Load map + channels
   useEffect(() => {
     (async () => {
       try {
@@ -24,7 +26,7 @@ export default function GengasTV() {
         ).features;
         setCountries(features);
       } catch (err) {
-        console.error("Failed to load world map:", err);
+        console.error("World load failed", err);
       }
 
       const ch = await loadChannels();
@@ -33,68 +35,63 @@ export default function GengasTV() {
     })();
   }, []);
 
-  // Configure globe after data load
   useEffect(() => {
     if (globeEl.current) {
       const controls = globeEl.current.controls();
       controls.autoRotate = false;
       controls.enableZoom = true;
       controls.enablePan = false;
-      globeEl.current.pointOfView({ altitude: 2.2 }); // 100% zoom out
+      globeEl.current.pointOfView({ altitude: 2.2 });
     }
   }, [countries]);
 
-  // Handle clicking a country
   const handleClick = (country) => {
     if (!country?.properties?.name) return;
-    const name = country.properties.name.trim();
-    selectCountry(name);
+    selectCountry(country.properties.name.trim());
   };
 
-  // Select by name (used by click or search)
   const selectCountry = (name) => {
     setSelectedCountry(name);
-    const normalizedKeys = Object.keys(channels);
-    const direct = channels[name];
-    const partialKey = normalizedKeys.find(
+    const key = Object.keys(channels).find(
       (k) => k.toLowerCase() === name.toLowerCase()
     );
-    const fallback = normalizedKeys.find((k) =>
+    const fallback = Object.keys(channels).find((k) =>
       k.toLowerCase().includes(name.toLowerCase())
     );
+    const data = channels[key] || channels[fallback];
+    setCountryChannels(data?.channels || []);
+    setActiveChannel(null);
 
-    const data =
-      direct ||
-      (partialKey ? channels[partialKey] : null) ||
-      (fallback ? channels[fallback] : null);
-
-    if (data?.channels?.length) {
-      setCountryChannels(data.channels);
-      console.log(`Loaded ${data.channels.length} channels for ${name}`);
-    } else {
-      setCountryChannels([]);
-      console.warn(`No channels for ${name}`);
-    }
-
-    // Auto focus globe on selected country
     if (globeEl.current && countries.length > 0) {
       const found = countries.find(
         (c) => c.properties.name.toLowerCase() === name.toLowerCase()
       );
       if (found) {
         const centroid = globeEl.current.getCoords(found);
-        globeEl.current.pointOfView({ lat: centroid.lat, lng: centroid.lng, altitude: 1.3 }, 1000);
+        globeEl.current.pointOfView(
+          { lat: centroid.lat, lng: centroid.lng, altitude: 1.3 },
+          1000
+        );
       }
     }
   };
 
-  // Color generation (unique per country)
   const getCountryColor = (d) => {
     const hash = d.properties.name
       .split("")
       .reduce((a, c) => a + c.charCodeAt(0), 0);
     const hue = hash % 360;
-    return `hsl(${hue}, 70%, 55%)`;
+    return `hsl(${hue}, 70%, 50%)`;
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    if (!value) return setSuggestions([]);
+    const lower = value.toLowerCase();
+    const matched = Object.keys(channels)
+      .filter((k) => k.toLowerCase().startsWith(lower))
+      .slice(0, 8);
+    setSuggestions(matched);
   };
 
   if (isLoading)
@@ -123,17 +120,17 @@ export default function GengasTV() {
           position: "absolute",
           top: "10px",
           left: "10px",
-          color: "#fff",
+          color: "#0ff",
           fontSize: "24px",
           fontWeight: "bold",
-          textShadow: "0 0 10px #00ffff",
+          textShadow: "0 0 15px #00ffff",
           zIndex: 20,
         }}
       >
-        🌍 Genga Garden TV
+        🌐 Genga Garden TV
       </div>
 
-      {/* Search bar */}
+      {/* Search */}
       <div
         style={{
           position: "absolute",
@@ -146,12 +143,12 @@ export default function GengasTV() {
           type="text"
           placeholder="Search country..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && selectCountry(searchTerm)}
           style={{
-            padding: "8px 12px",
-            borderRadius: "8px",
-            border: "1px solid #0ff",
+            padding: "10px 12px",
+            borderRadius: "10px",
+            border: "2px solid #0ff",
             background: "rgba(0,0,0,0.6)",
             color: "#fff",
             fontSize: "14px",
@@ -161,9 +158,9 @@ export default function GengasTV() {
         <button
           onClick={() => selectCountry(searchTerm)}
           style={{
-            marginLeft: "8px",
-            padding: "8px 12px",
-            borderRadius: "8px",
+            marginLeft: "6px",
+            padding: "10px 12px",
+            borderRadius: "10px",
             background: "#0ff",
             border: "none",
             cursor: "pointer",
@@ -173,6 +170,40 @@ export default function GengasTV() {
         >
           🔍
         </button>
+
+        {/* Suggestion dropdown */}
+        {suggestions.length > 0 && (
+          <div
+            style={{
+              background: "rgba(0,0,0,0.8)",
+              color: "#fff",
+              borderRadius: "6px",
+              border: "1px solid #0ff",
+              marginTop: "5px",
+              width: "240px",
+              maxHeight: "160px",
+              overflowY: "auto",
+            }}
+          >
+            {suggestions.map((s, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: "6px 10px",
+                  cursor: "pointer",
+                  borderBottom: "1px solid #222",
+                }}
+                onClick={() => {
+                  setSearchTerm(s);
+                  setSuggestions([]);
+                  selectCountry(s);
+                }}
+              >
+                {s}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Globe */}
@@ -182,13 +213,13 @@ export default function GengasTV() {
         backgroundColor="#000"
         polygonsData={countries}
         polygonCapColor={getCountryColor}
-        polygonSideColor={() => "rgba(0,0,0,0.2)"}
-        polygonStrokeColor={() => "#111"}
+        polygonSideColor={() => "rgba(0,0,0,0.3)"}
+        polygonStrokeColor={() => "#222"}
         polygonAltitude={0.015}
         onPolygonClick={handleClick}
       />
 
-      {/* Sidebar for country */}
+      {/* Sidebar */}
       {selectedCountry && (
         <div
           style={{
@@ -202,6 +233,7 @@ export default function GengasTV() {
             overflowY: "auto",
             padding: "20px",
             borderLeft: "2px solid #0ff",
+            zIndex: 25,
           }}
         >
           <h2 style={{ color: "#0ff", marginTop: 0 }}>{selectedCountry}</h2>
@@ -211,46 +243,88 @@ export default function GengasTV() {
               <div
                 key={i}
                 style={{
-                  marginBottom: "18px",
+                  marginBottom: "15px",
                   borderBottom: "1px solid #333",
                   paddingBottom: "10px",
+                  cursor: "pointer",
                 }}
+                onClick={() => setActiveChannel(ch)}
               >
                 <b>{ch.name}</b>
                 <br />
                 <small>{ch.language?.toUpperCase() || "N/A"}</small>
-                <br />
-                {ch.type === "youtube" ? (
-                  <iframe
-                    width="100%"
-                    height="200"
-                    src={ch.url}
-                    title={ch.name}
-                    allow="autoplay; encrypted-media"
-                    style={{ borderRadius: "6px", marginTop: "6px" }}
-                  ></iframe>
-                ) : (
-                  <video
-                    width="100%"
-                    height="200"
-                    controls
-                    muted
-                    style={{ borderRadius: "6px", marginTop: "6px" }}
-                    ref={(el) => {
-                      if (el && Hls.isSupported()) {
-                        const hls = new Hls();
-                        hls.loadSource(ch.url);
-                        hls.attachMedia(el);
-                      } else if (el) {
-                        el.src = ch.url;
-                      }
-                    }}
-                  />
-                )}
               </div>
             ))
           ) : (
             <p style={{ color: "#888" }}>No channels available</p>
+          )}
+        </div>
+      )}
+
+      {/* Floating Player */}
+      {activeChannel && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "600px",
+            background: "#000",
+            border: "2px solid #0ff",
+            borderRadius: "10px",
+            padding: "10px",
+            zIndex: 50,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              color: "#0ff",
+              marginBottom: "5px",
+            }}
+          >
+            <span>{activeChannel.name}</span>
+            <button
+              onClick={() => setActiveChannel(null)}
+              style={{
+                background: "none",
+                color: "#0ff",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "16px",
+              }}
+            >
+              ✖
+            </button>
+          </div>
+
+          {activeChannel.type === "youtube" ? (
+            <iframe
+              width="100%"
+              height="320"
+              src={activeChannel.url}
+              allow="autoplay; encrypted-media"
+              title={activeChannel.name}
+            ></iframe>
+          ) : (
+            <video
+              width="100%"
+              height="320"
+              controls
+              autoPlay
+              style={{ borderRadius: "6px" }}
+              ref={(el) => {
+                if (el && Hls.isSupported()) {
+                  const hls = new Hls();
+                  hls.loadSource(activeChannel.url);
+                  hls.attachMedia(el);
+                } else if (el) {
+                  el.src = activeChannel.url;
+                }
+              }}
+            />
           )}
         </div>
       )}
