@@ -1,19 +1,22 @@
 export async function loadChannels() {
-  // remote primary (raw GitHub) and local fallback
-  const remote = 'https://raw.githubusercontent.com/solo12345689/gengas-garden/main/public/channels.json';
-  try {
-    const res = await fetch(remote, { cache: 'no-store' });
-    if (!res.ok) throw new Error('remote fetch failed');
-    return await res.json();
-  } catch (e) {
-    console.warn('Remote fetch failed, falling back to local', e);
+  const cacheKey = "gengas-channels-v1";
+  const cached = localStorage.getItem(cacheKey);
+  if (cached) {
     try {
-      const r = await fetch('/channels.json');
-      if (!r.ok) throw new Error('local fetch failed');
-      return await r.json();
-    } catch (err) {
-      console.error('Both remote and local fetch failed', err);
-      return null;
-    }
+      console.log("Loaded channels from cache");
+      return JSON.parse(cached);
+    } catch {}
+  }
+
+  const remote = "https://raw.githubusercontent.com/solo12345689/gengas-garden/main/public/channels.json";
+
+  try {
+    const res = await fetch(remote, { cache: "force-cache" });
+    const data = await res.json();
+    localStorage.setItem(cacheKey, JSON.stringify(data));
+    return data;
+  } catch (err) {
+    console.error("Failed to load channels", err);
+    return {};
   }
 }
