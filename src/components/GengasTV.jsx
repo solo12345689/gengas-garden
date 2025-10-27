@@ -14,20 +14,28 @@ export default function GengasTV() {
   const [search, setSearch] = useState("");
   const [suggestions, setSuggestions] = useState([]);
 
-  // Load world + channels
+  // 🌍 Load world + channels
   useEffect(() => {
     (async () => {
-      const worldRes = await fetch("/world-110m.json");
-      const world = await worldRes.json();
-      const feats = topojson.feature(world, world.objects.countries).features;
-      setCountries(feats);
+      try {
+        const worldRes = await fetch("/world-110m.json");
+        const world = await worldRes.json();
+        const feats = topojson.feature(world, world.objects.countries).features;
+        setCountries(feats);
+      } catch (e) {
+        console.error("Failed to load world data", e);
+      }
 
-      const ch = await loadChannels();
-      setChannels(ch || {});
+      try {
+        const ch = await loadChannels();
+        setChannels(ch || {});
+      } catch (e) {
+        console.error("Failed to load channels", e);
+      }
     })();
   }, []);
 
-  // Auto-suggest logic
+  // 🔍 Auto-suggest
   useEffect(() => {
     if (!search) return setSuggestions([]);
     const matches = Object.keys(channels)
@@ -36,6 +44,7 @@ export default function GengasTV() {
     setSuggestions(matches);
   }, [search, channels]);
 
+  // 🔍 Search handler
   const handleSearch = (name) => {
     const match = Object.keys(channels).find(
       k => k.toLowerCase() === name.toLowerCase()
@@ -44,9 +53,16 @@ export default function GengasTV() {
       setSelectedCountry({ name: match, data: channels[match]?.channels || [] });
       setSuggestions([]);
       setSearch("");
+      // center globe to country if possible
+      const feature = countries.find(c => c.properties.name === match);
+      if (feature && globeRef.current) {
+        const [lng, lat] = feature.properties.centroid || [0, 0];
+        globeRef.current.pointOfView({ lat, lng, altitude: 1.5 }, 1000);
+      }
     }
   };
 
+  // 🌎 Country click
   const handleCountryClick = (country) => {
     const name = country.properties.name;
     const match = channels[name];
@@ -57,10 +73,12 @@ export default function GengasTV() {
     }
   };
 
+  // ▶ Play channel
   const handlePlay = (ch) => {
     setSelectedChannel(ch);
   };
 
+  // 🎥 Video render
   const renderVideo = (url, type) => {
     if (type === "youtube") {
       return (
@@ -104,60 +122,61 @@ export default function GengasTV() {
       </div>
 
       {/* Globe */}
-      <div className="main">
-        <Globe
-          ref={globeRef}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-          backgroundColor="rgba(0,0,0,0)"
-          polygonsData={countries}
-          polygonCapColor={() =>
-            `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},0.8)`
-          }
-          polygonSideColor={() => "rgba(0,100,255,0.05)"}
-          polygonStrokeColor={() => "#111"}
-          onPolygonClick={handleCountryClick}
-        />
+      <Globe
+        ref={globeRef}
+        backgroundColor="rgba(0,0,0,0)"
+        globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
+        polygonsData={countries}
+        polygonCapColor={() =>
+          `rgba(${Math.random() * 255},${Math.random() * 255},${Math.random() * 255},0.85)`
+        }
+        polygonSideColor={() => "rgba(0,100,255,0.1)"}
+        polygonStrokeColor={() => "#111"}
+        onPolygonClick={handleCountryClick}
+      />
 
-        {/* Sidebar */}
-        <div className={`sidebar ${selectedCountry ? "visible" : ""}`}>
-          {selectedCountry && (
-            <>
-              <h2>{selectedCountry.name}</h2>
-              <div className="channels">
-                {(selectedCountry.data || []).length === 0 && (
-                  <div className="no-channels">No channels available</div>
-                )}
-                {(selectedCountry.data || []).map((ch, i) => (
-                  <div key={i} className="channel" onClick={() => handlePlay(ch)}>
-                    <b>{ch.name}</b>
-                    <div className="lang">{ch.language?.toUpperCase()}</div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Player */}
-        <div className={`player ${selectedChannel ? "visible" : ""}`}>
-          {selectedChannel && (
-            <>
-              <div className="player-header">
-                <span>{selectedChannel.name}</span>
-                <button onClick={() => setSelectedChannel(null)}>✖</button>
-              </div>
-              <div className="player-body">
-                {renderVideo(selectedChannel.url, selectedChannel.type)}
-              </div>
-            </>
-          )}
-        </div>
+      {/* Sidebar */}
+      <div className={`sidebar ${selectedCountry ? "visible" : ""}`}>
+        {selectedCountry && (
+          <>
+            <h2>{selectedCountry.name}</h2>
+            <div className="channels">
+              {(selectedCountry.data || []).length === 0 && (
+                <div className="no-channels">No channels available</div>
+              )}
+              {(selectedCountry.data || []).map((ch, i) => (
+                <div key={i} className="channel" onClick={() => handlePlay(ch)}>
+                  <b>{ch.name}</b>
+                  <div className="lang">{ch.language?.toUpperCase()}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Player */}
+      {selectedChannel && (
+        <div className="player-backdrop" onClick={() => setSelectedChannel(null)}>
+          <div
+            className="player visible"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="player-header">
+              <span>{selectedChannel.name}</span>
+              <button onClick={() => setSelectedChannel(null)}>✖</button>
+            </div>
+            <div className="player-body">
+              {renderVideo(selectedChannel.url, selectedChannel.type)}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// HLS Player Component
+// 🎞 HLS Player
 function HlsPlayer({ src }) {
   const ref = useRef();
   useEffect(() => {
