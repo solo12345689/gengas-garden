@@ -6,26 +6,25 @@ import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
   const globeRef = useRef();
-  const [worldData, setWorldData] = useState(null);
+  const [countries, setCountries] = useState([]);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredCountries, setFilteredCountries] = useState([]);
 
-  // Load world data
+  // Load world map
   useEffect(() => {
     fetch("/world-110m.json")
       .then((res) => res.json())
       .then((topology) => {
-        const features = topojson.feature(topology, topology.objects.countries)
-          .features;
-        setWorldData(features);
+        const features = topojson.feature(topology, topology.objects.countries).features;
+        setCountries(features);
       })
-      .catch((err) => console.error("Failed to load world map", err));
+      .catch((err) => console.error("World map load failed:", err));
   }, []);
 
-  // Load channel data
+  // Load channel list
   useEffect(() => {
     loadChannels().then((data) => {
       if (data) setChannels(data);
@@ -33,40 +32,49 @@ export default function GengasTV() {
   }, []);
 
   const handleCountryClick = (country) => {
-    const name = country.properties.name;
+    if (!country?.properties?.name) return;
+    const name = country.properties.name.trim();
     setSelectedCountry(name);
-    const found = Object.keys(channels).find(
+
+    // Find by name
+    const match = Object.keys(channels).find(
       (key) => key.toLowerCase() === name.toLowerCase()
     );
-    setSelectedChannel(found ? channels[found].channels[0] : null);
+    if (match) setSelectedChannel(channels[match].channels[0]);
+    else setSelectedChannel(null);
   };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    if (!worldData) return;
-    const matches = worldData
+    if (!query || !countries.length) {
+      setFilteredCountries([]);
+      return;
+    }
+    const matches = countries
       .map((f) => f.properties.name)
-      .filter((n) => n.toLowerCase().includes(query.toLowerCase()));
-    setFilteredCountries(matches.slice(0, 5));
+      .filter((n) => n.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, 6);
+    setFilteredCountries(matches);
   };
 
-  const handleSearchSelect = (countryName) => {
-    const feature = worldData.find(
-      (f) => f.properties.name.toLowerCase() === countryName.toLowerCase()
+  const handleSearchSelect = (name) => {
+    const country = countries.find(
+      (f) => f.properties.name.toLowerCase() === name.toLowerCase()
     );
-    if (feature && globeRef.current) {
-      const { lat, lng } = {
-        lat: feature.properties.latitude || 0,
-        lng: feature.properties.longitude || 0,
-      };
-      globeRef.current.pointOfView({ lat, lng, altitude: 1.8 }, 1000);
-      handleCountryClick(feature);
+    if (country && globeRef.current) {
+      const centroid = new THREE.Vector3();
+      const coords = country.geometry.coordinates[0][0];
+      centroid.set(coords[0], coords[1], 0);
+      globeRef.current.pointOfView({ lat: coords[1], lng: coords[0], altitude: 1.8 }, 1000);
+      handleCountryClick(country);
     }
     setFilteredCountries([]);
     setSearchQuery("");
   };
 
-  const channelList =
+  const countryColor = () => `hsl(${Math.random() * 360}, 70%, 55%)`;
+
+  const selectedChannels =
     selectedCountry && channels[selectedCountry]
       ? channels[selectedCountry].channels
       : [];
@@ -76,14 +84,14 @@ export default function GengasTV() {
       style={{
         height: "100vh",
         width: "100vw",
-        background:
-          "radial-gradient(circle at center, #020617, #000) fixed",
         overflow: "hidden",
+        background: "radial-gradient(circle at center, #020617, #000000)",
         position: "relative",
         color: "white",
+        fontFamily: "Poppins, sans-serif",
       }}
     >
-      {/* App Header */}
+      {/* Header */}
       <div
         style={{
           position: "absolute",
@@ -93,21 +101,18 @@ export default function GengasTV() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          zIndex: 5,
+          zIndex: 10,
         }}
       >
-        <h2 style={{ fontSize: "1.5rem", color: "#93c5fd" }}>
-          🌍 Genga Garden TV
-        </h2>
+        <h2 style={{ fontSize: "1.6rem", color: "#60a5fa" }}>🌍 Genga Garden TV</h2>
         <div style={{ position: "relative" }}>
           <input
-            type="text"
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search country..."
             style={{
               padding: "8px 12px",
-              borderRadius: "8px",
+              borderRadius: "6px",
               border: "none",
               outline: "none",
               fontSize: "14px",
@@ -117,26 +122,27 @@ export default function GengasTV() {
             <div
               style={{
                 position: "absolute",
-                background: "#1e293b",
                 top: "110%",
                 left: 0,
                 right: 0,
+                background: "#1e293b",
                 borderRadius: "8px",
                 overflow: "hidden",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.6)",
+                zIndex: 11,
               }}
             >
-              {filteredCountries.map((country) => (
+              {filteredCountries.map((c) => (
                 <div
-                  key={country}
-                  onClick={() => handleSearchSelect(country)}
+                  key={c}
+                  onClick={() => handleSearchSelect(c)}
                   style={{
                     padding: "8px",
-                    cursor: "pointer",
                     borderBottom: "1px solid #334155",
+                    cursor: "pointer",
                   }}
                 >
-                  {country}
+                  {c}
                 </div>
               ))}
             </div>
@@ -145,25 +151,19 @@ export default function GengasTV() {
       </div>
 
       {/* Globe */}
-      {worldData && (
+      {countries.length > 0 && (
         <Globe
           ref={globeRef}
-          globeMaterial={new THREE.MeshPhongMaterial({
-            color: "#1d4ed8",
-            emissive: "#0f172a",
-            shininess: 10,
-            transparent: false,
-          })}
-          backgroundColor="rgba(0,0,0,0)"
           width={window.innerWidth}
           height={window.innerHeight}
-          hexPolygonsData={worldData}
-          hexPolygonResolution={3}
-          hexPolygonMargin={0.5}
-          hexPolygonColor={() =>
-            `hsl(${Math.random() * 360}, 70%, 55%)`
-          }
-          onHexPolygonClick={handleCountryClick}
+          backgroundColor="rgba(0,0,0,0)"
+          showAtmosphere={true}
+          atmosphereColor="lightskyblue"
+          polygonsData={countries}
+          polygonCapColor={countryColor}
+          polygonSideColor={() => "rgba(0,100,200,0.2)"}
+          polygonStrokeColor={() => "#111827"}
+          onPolygonClick={handleCountryClick}
         />
       )}
 
@@ -174,30 +174,29 @@ export default function GengasTV() {
             position: "absolute",
             right: 0,
             top: 0,
-            width: "320px",
+            width: "300px",
             height: "100%",
             background: "rgba(15,23,42,0.95)",
-            padding: "20px",
+            backdropFilter: "blur(6px)",
+            padding: "16px",
             overflowY: "auto",
-            color: "white",
-            backdropFilter: "blur(8px)",
-            transition: "transform 0.4s ease-in-out",
             transform: selectedCountry ? "translateX(0)" : "translateX(100%)",
+            transition: "transform 0.4s ease",
           }}
         >
           <h3 style={{ color: "#93c5fd" }}>{selectedCountry}</h3>
-          {channelList.length > 0 ? (
-            channelList.map((ch, i) => (
+          {selectedChannels.length > 0 ? (
+            selectedChannels.map((ch, i) => (
               <div
                 key={i}
+                onClick={() => setSelectedChannel(ch)}
                 style={{
+                  marginTop: "8px",
                   padding: "8px",
-                  marginTop: "6px",
                   background: "#1e3a8a",
                   borderRadius: "6px",
                   cursor: "pointer",
                 }}
-                onClick={() => setSelectedChannel(ch)}
               >
                 {ch.name}
               </div>
@@ -208,7 +207,7 @@ export default function GengasTV() {
         </div>
       )}
 
-      {/* Video Player */}
+      {/* Player */}
       {selectedChannel && (
         <div
           style={{
@@ -216,22 +215,21 @@ export default function GengasTV() {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
+            zIndex: 20,
             background: "#000",
-            padding: "12px",
+            padding: "10px",
             borderRadius: "10px",
-            zIndex: 10,
-            boxShadow: "0 0 20px rgba(0,0,0,0.8)",
-            animation: "fadeIn 0.5s ease",
+            boxShadow: "0 0 25px rgba(0,0,0,0.8)",
           }}
         >
           {selectedChannel.type === "youtube" ? (
             <iframe
               src={selectedChannel.url}
-              title={selectedChannel.name}
               width="640"
               height="360"
+              title={selectedChannel.name}
               allow="autoplay; fullscreen"
-              style={{ border: "none", borderRadius: "10px" }}
+              style={{ border: "none", borderRadius: "8px" }}
             />
           ) : (
             <video
@@ -240,7 +238,7 @@ export default function GengasTV() {
               autoPlay
               width="640"
               height="360"
-              style={{ borderRadius: "10px" }}
+              style={{ borderRadius: "8px" }}
             />
           )}
         </div>
