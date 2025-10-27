@@ -10,128 +10,162 @@ export default function GengasTV() {
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [countryChannels, setCountryChannels] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load world and channels
+  // Load world map + channel data
   useEffect(() => {
     (async () => {
       try {
-        // Load world topology (political borders)
-        const worldData = await fetch("/world-110m.json").then((res) =>
-          res.json()
-        );
-        const countriesData = topojson.feature(
-          worldData,
-          worldData.objects.countries
+        console.log("Loading world data...");
+        const world = await fetch("/world-110m.json").then((res) => res.json());
+        const features = topojson.feature(
+          world,
+          world.objects.countries
         ).features;
-        setCountries(countriesData);
-        console.log(`Parsed ${countriesData.length} country features`);
+        setCountries(features);
+        console.log("Loaded", features.length, "countries");
       } catch (err) {
-        console.error("Failed to load world JSON", err);
+        console.error("Failed to load world JSON:", err);
       }
 
-      // Load channel data
       const ch = await loadChannels();
       if (ch) {
         setChannels(ch);
-        console.log(
-          `Channels loaded (keys: ${Object.keys(ch).slice(0, 10).join(", ")} ...)`
-        );
-      } else {
-        console.error("Failed to load channels");
+        console.log("Loaded channels:", Object.keys(ch).length);
       }
+      setIsLoading(false);
     })();
   }, []);
 
-  // Handle click on a country
+  // Fix auto black globe — ensure material applied immediately
+  useEffect(() => {
+    if (globeEl.current) {
+      globeEl.current.controls().autoRotate = false;
+      globeEl.current.controls().enableZoom = true;
+      globeEl.current.controls().enablePan = false;
+    }
+  }, [countries]);
+
   const handleClick = (country) => {
-    const countryName = country?.properties?.name;
-    if (!countryName) return;
+    if (!country?.properties?.name) return;
+    const name = country.properties.name.trim();
+    console.log("Clicked:", name);
 
-    console.log(`Clicked country: ${countryName}`);
+    setSelectedCountry(name);
 
-    setSelectedCountry(countryName);
+    // Match country name by exact key or close match
+    const normalizedKeys = Object.keys(channels);
+    const direct = channels[name];
+    const partialKey = normalizedKeys.find(
+      (k) => k.toLowerCase() === name.toLowerCase()
+    );
+    const fallback = normalizedKeys.find((k) =>
+      k.toLowerCase().includes(name.toLowerCase())
+    );
 
-    // Match by direct or partial key
-    const directMatch = channels[countryName];
-    const altMatch =
-      Object.keys(channels).find(
-        (key) => key.toLowerCase().includes(countryName.toLowerCase())
-      ) || null;
+    const data =
+      direct ||
+      (partialKey ? channels[partialKey] : null) ||
+      (fallback ? channels[fallback] : null);
 
-    const matchedData = directMatch || (altMatch ? channels[altMatch] : null);
-
-    if (matchedData && matchedData.channels?.length) {
-      setCountryChannels(matchedData.channels);
+    if (data?.channels?.length) {
+      setCountryChannels(data.channels);
+      console.log(`Found ${data.channels.length} channels for ${name}`);
     } else {
       setCountryChannels([]);
-      console.warn(`No match for ${countryName}`);
+      console.warn(`No channels found for ${name}`);
     }
   };
 
-  // Colorful countries
+  // Distinct colors per country
   const getCountryColor = (d) => {
-    const seed = d.properties.name.length;
-    const hue = (seed * 47) % 360;
-    return `hsl(${hue}, 80%, 55%)`;
+    const hash = d.properties.name
+      .split("")
+      .reduce((a, c) => a + c.charCodeAt(0), 0);
+    const hue = hash % 360;
+    return `hsl(${hue}, 70%, 50%)`;
   };
 
+  if (isLoading)
+    return (
+      <div
+        style={{
+          color: "#0ff",
+          background: "#000",
+          height: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontSize: "1.5rem",
+          fontFamily: "sans-serif",
+        }}
+      >
+        🌍 Loading Genga Garden TV...
+      </div>
+    );
+
   return (
-    <div style={{ position: "relative", height: "100vh", background: "#000" }}>
+    <div style={{ position: "relative", height: "100vh", overflow: "hidden" }}>
+      {/* Header */}
       <div
         style={{
           position: "absolute",
           top: "10px",
           left: "10px",
-          color: "white",
-          fontSize: "20px",
+          color: "#fff",
+          fontSize: "22px",
           fontWeight: "bold",
           zIndex: 10,
+          textShadow: "0 0 8px #0ff",
         }}
       >
         🌍 Genga Garden TV
       </div>
 
+      {/* Globe */}
       <Globe
         ref={globeEl}
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
         backgroundColor="#000"
         polygonsData={countries}
         polygonCapColor={getCountryColor}
-        polygonSideColor={() => "rgba(0, 100, 200, 0.15)"}
+        polygonSideColor={() => "rgba(0,0,0,0.15)"}
         polygonStrokeColor={() => "#111"}
+        polygonAltitude={0.015}
         onPolygonClick={handleClick}
-        polygonAltitude={0.02}
         width={window.innerWidth}
         height={window.innerHeight}
       />
 
+      {/* Sidebar */}
       {selectedCountry && (
         <div
           style={{
             position: "absolute",
-            top: "70px",
-            right: "0",
-            width: "320px",
-            height: "calc(100vh - 70px)",
-            background: "rgba(0,0,0,0.8)",
-            color: "white",
+            right: 0,
+            top: 0,
+            height: "100vh",
+            width: "340px",
+            background: "rgba(0,0,0,0.9)",
+            color: "#fff",
             overflowY: "auto",
-            padding: "15px",
+            padding: "20px",
             borderLeft: "2px solid #0ff",
           }}
         >
-          <h2 style={{ marginTop: 0 }}>{selectedCountry}</h2>
+          <h2 style={{ marginTop: 0, color: "#0ff" }}>{selectedCountry}</h2>
+
           {countryChannels.length > 0 ? (
             countryChannels.map((ch, i) => (
               <div
                 key={i}
                 style={{
-                  marginBottom: "12px",
-                  paddingBottom: "8px",
+                  marginBottom: "18px",
                   borderBottom: "1px solid #333",
+                  paddingBottom: "10px",
                 }}
               >
-                <strong>{ch.name}</strong>
+                <b>{ch.name}</b>
                 <br />
                 <small>{ch.language?.toUpperCase() || "N/A"}</small>
                 <br />
@@ -142,22 +176,22 @@ export default function GengasTV() {
                     src={ch.url}
                     title={ch.name}
                     allow="autoplay; encrypted-media"
+                    style={{ borderRadius: "6px", marginTop: "6px" }}
                   ></iframe>
                 ) : (
                   <video
                     width="100%"
                     height="200"
                     controls
-                    autoPlay
                     muted
-                    onError={() =>
-                      console.error(`Failed to load video: ${ch.url}`)
-                    }
+                    style={{ borderRadius: "6px", marginTop: "6px" }}
                     ref={(el) => {
                       if (el && Hls.isSupported()) {
                         const hls = new Hls();
                         hls.loadSource(ch.url);
                         hls.attachMedia(el);
+                      } else if (el) {
+                        el.src = ch.url;
                       }
                     }}
                   />
@@ -165,7 +199,7 @@ export default function GengasTV() {
               </div>
             ))
           ) : (
-            <p>No channels available</p>
+            <p style={{ color: "#888" }}>No channels available</p>
           )}
         </div>
       )}
