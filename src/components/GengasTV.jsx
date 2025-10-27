@@ -13,9 +13,10 @@ export default function GengasTV() {
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredCountries, setFilteredCountries] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // 🌍 Load world & channels
+  // Load map + channel data
   useEffect(() => {
     (async () => {
       try {
@@ -24,50 +25,62 @@ export default function GengasTV() {
         const features = topojson.feature(world, world.objects.countries);
         setWorldData(features);
         setChannels(ch);
-        setFilteredCountries(Object.keys(ch));
+        setLoading(false);
       } catch (err) {
         console.error("Error loading data:", err);
       }
     })();
   }, []);
 
-  // 🔎 Search filter
+  // Country click
+  const handleCountryClick = (d) => {
+    const name = d.properties.name;
+    if (channels[name]) setSelectedCountry(name);
+    else {
+      const key = Object.keys(channels).find(
+        (c) => c.toLowerCase() === name.toLowerCase()
+      );
+      if (key) setSelectedCountry(key);
+      else setSelectedCountry(null);
+    }
+    setSelectedChannel(null);
+  };
+
+  // Channel click
+  const handleChannelSelect = (ch) => setSelectedChannel(ch);
+  const closePlayer = () => setSelectedChannel(null);
+
+  // Search handler
   const handleSearch = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
-    if (!term.trim()) setFilteredCountries(Object.keys(channels));
-    else {
-      const filtered = Object.keys(channels).filter((c) =>
-        c.toLowerCase().includes(term.toLowerCase())
-      );
-      setFilteredCountries(filtered);
+    if (!term.trim()) {
+      setSuggestions([]);
+      return;
     }
+    const matches = Object.keys(channels).filter((c) =>
+      c.toLowerCase().includes(term.toLowerCase())
+    );
+    setSuggestions(matches.slice(0, 8));
   };
 
-  // 🗺 Click country
-  const handleCountryClick = (d) => {
-    const name = d.properties.name;
-    if (channels[name]) {
-      setSelectedCountry(name);
-    } else {
-      console.log(`No match for ${name}`);
-      setSelectedCountry(null);
-    }
+  const handleSuggestionClick = (country) => {
+    setSelectedCountry(country);
+    setSuggestions([]);
+    setSearchTerm(country);
   };
 
-  // 🎥 Select channel
-  const handleChannelSelect = (ch) => {
-    setSelectedChannel(ch);
-  };
-
-  const closePlayer = () => setSelectedChannel(null);
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center text-cyan-400 bg-black text-xl">
+        Loading Genga TV …
+      </div>
+    );
+  }
 
   return (
-    <div className="relative w-full h-screen overflow-hidden text-white bg-black">
-      {/* 🌠 Starfield Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#020617,_#000)] -z-10" />
-
-      {/* 🔝 Fixed Top Bar */}
+    <div className="relative w-full h-screen text-white overflow-hidden bg-black">
+      {/* Top Bar */}
       <div className="absolute top-0 left-0 w-full flex justify-between items-center px-6 py-3 bg-black/60 backdrop-blur-md border-b border-cyan-700 z-50">
         <div className="flex items-center gap-2">
           <FaGlobe className="text-cyan-400" />
@@ -75,24 +88,39 @@ export default function GengasTV() {
             Genga TV
           </h1>
         </div>
-        <div className="flex items-center bg-white/10 px-3 py-2 rounded-lg gap-2">
-          <FaSearch className="text-cyan-400" />
-          <input
-            type="text"
-            placeholder="Search country..."
-            value={searchTerm}
-            onChange={handleSearch}
-            className="bg-transparent text-white focus:outline-none placeholder-gray-400 w-56"
-          />
+        <div className="relative">
+          <div className="flex items-center bg-white/10 px-3 py-2 rounded-lg gap-2">
+            <FaSearch className="text-cyan-400" />
+            <input
+              type="text"
+              placeholder="Search country..."
+              value={searchTerm}
+              onChange={handleSearch}
+              className="bg-transparent text-white focus:outline-none placeholder-gray-400 w-56"
+            />
+          </div>
+          {suggestions.length > 0 && (
+            <div className="absolute mt-1 bg-black/80 border border-cyan-700 rounded-lg max-h-48 overflow-y-auto w-full z-50">
+              {suggestions.map((s, i) => (
+                <div
+                  key={i}
+                  onClick={() => handleSuggestionClick(s)}
+                  className="px-3 py-1 hover:bg-cyan-600/40 cursor-pointer"
+                >
+                  {s}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 🌐 Globe */}
+      {/* Globe */}
       <div className="absolute inset-0" style={{ zIndex: 1 }}>
         {worldData && (
           <Globe
             ref={globeRef}
-            globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+            globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
             backgroundColor="rgba(0,0,0,0)"
             polygonsData={worldData.features.filter(
               (d) => d.properties.ISO_A2 !== "AQ"
@@ -100,17 +128,16 @@ export default function GengasTV() {
             polygonCapColor={() =>
               `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${
                 Math.random() * 255
-              }, 0.8)`
+              }, 0.9)`
             }
-            polygonSideColor={() => "rgba(0,0,0,0.15)"}
-            polygonStrokeColor={() => "#222"}
-            polygonLabel={({ properties: d }) => `${d.name}`}
+            polygonSideColor={() => "rgba(0,0,0,0.25)"}
+            polygonStrokeColor={() => "#111"}
             onPolygonClick={handleCountryClick}
           />
         )}
       </div>
 
-      {/* 📜 Sidebar for Channels */}
+      {/* Sidebar */}
       <AnimatePresence>
         {selectedCountry && (
           <motion.div
@@ -132,6 +159,7 @@ export default function GengasTV() {
                 <FaTimes />
               </button>
             </div>
+
             {channels[selectedCountry]?.channels?.length > 0 ? (
               channels[selectedCountry].channels.map((ch, i) => (
                 <div
@@ -153,7 +181,7 @@ export default function GengasTV() {
         )}
       </AnimatePresence>
 
-      {/* 🎥 Video Player */}
+      {/* Player */}
       <AnimatePresence>
         {selectedChannel && (
           <motion.div
@@ -163,8 +191,12 @@ export default function GengasTV() {
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ duration: 0.3 }}
             className="fixed inset-0 flex items-center justify-center bg-black/80 z-50"
+            onClick={closePlayer}
           >
-            <div className="relative w-[85%] max-w-3xl bg-black border border-cyan-500 rounded-2xl shadow-xl">
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-[85%] max-w-3xl bg-black border border-cyan-500 rounded-2xl shadow-xl"
+            >
               <button
                 onClick={closePlayer}
                 className="absolute top-3 right-3 text-cyan-400 hover:text-red-400 text-2xl"
