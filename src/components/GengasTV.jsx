@@ -7,112 +7,102 @@ import Hls from "hls.js";
 
 export default function GengasTV() {
   const globeRef = useRef();
-  const [worldData, setWorldData] = useState(null);
+  const [countries, setCountries] = useState([]);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filtered, setFiltered] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
 
-  // Load world map data
+  // ✅ Load world data
   useEffect(() => {
     fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then((res) => res.json())
       .then((world) => {
         const features = topojson.feature(world, world.objects.countries).features;
-        setWorldData(features);
+        setCountries(features);
+        console.log("🌍 Loaded countries:", features.length);
       });
   }, []);
 
-  // Load channel data
+  // ✅ Load channel data
   useEffect(() => {
     (async () => {
       const data = await loadChannels();
-      if (data) {
-        console.log("✅ Channels loaded:", Object.keys(data).slice(0, 10));
-        setChannels(data);
-      }
+      setChannels(data);
+      console.log("✅ Channels loaded:", Object.keys(data).length);
     })();
   }, []);
 
-  // Normalize country names for matching
-  const normalizeName = (name) =>
-    name.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "");
+  // ✅ Normalize country names
+  const normalize = (name) =>
+    name?.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "") || "";
 
+  // ✅ Handle country click
   const handleClick = (country) => {
     if (!country?.properties?.name) return;
     const name = country.properties.name;
-    console.log("🌍 Clicked:", name);
+    console.log("🖱 Clicked:", name);
 
-    const norm = normalizeName(name);
+    const norm = normalize(name);
     const keys = Object.keys(channels);
 
     let match =
-      keys.find((k) => normalizeName(k) === norm) ||
-      keys.find((k) => normalizeName(k).includes(norm)) ||
-      keys.find((k) => norm.includes(normalizeName(k)));
+      keys.find((k) => normalize(k) === norm) ||
+      keys.find((k) => normalize(k).includes(norm)) ||
+      keys.find((k) => norm.includes(normalize(k)));
 
     if (match) {
-      const ch = channels[match]?.channels || [];
-      console.log(`📺 ${match} → ${ch.length} channels`);
-      setSelectedCountry({ name: match, channels: ch });
+      setSelectedCountry({ name: match, channels: channels[match].channels });
     } else {
-      console.warn("⚠️ No match found for", name);
       setSelectedCountry({ name, channels: [] });
     }
   };
 
-  // Initialize colorful globe
+  // ✅ Initialize globe when ready
   useEffect(() => {
-    if (!worldData || !globeRef.current) return;
-
+    if (!globeRef.current || countries.length === 0) return;
     const globe = globeRef.current;
-    const interval = setInterval(() => {
-      if (typeof globe.polygonsData === "function") {
-        clearInterval(interval);
 
-        const colorScale = (name) => {
-          const seed = normalizeName(name);
-          const hue = (seed.charCodeAt(0) * 37) % 360;
-          return `hsl(${hue}, 80%, 55%)`;
-        };
+    const colorByName = (name) => {
+      const hue = (normalize(name).charCodeAt(0) * 57) % 360;
+      return `hsl(${hue}, 70%, 50%)`;
+    };
 
-        globe
-          .polygonsData(worldData)
-          .polygonCapColor((d) => colorScale(d.properties.name))
-          .polygonSideColor(() => "rgba(80,80,80,0.3)")
-          .polygonStrokeColor(() => "#111")
-          .polygonAltitude(0.01)
-          .onPolygonClick(handleClick)
-          .pointOfView({ altitude: 2.2 });
+    // Set globe data and event
+    globe
+      .polygonsData(countries)
+      .polygonCapColor((d) => colorByName(d.properties.name))
+      .polygonSideColor(() => "rgba(100,100,100,0.25)")
+      .polygonStrokeColor(() => "#111")
+      .polygonAltitude(0.01)
+      .onPolygonClick(handleClick)
+      .pointOfView({ altitude: 2 });
 
-        const scene = globe.scene();
-        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(1, 1, 1);
-        scene.add(dirLight);
+    // Lights
+    const scene = globe.scene();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const light = new THREE.DirectionalLight(0xffffff, 0.8);
+    light.position.set(1, 1, 1);
+    scene.add(light);
 
-        console.log("🌐 Globe initialized successfully.");
-      }
-    }, 300);
+    console.log("✅ Globe initialized successfully");
+  }, [countries]);
 
-    return () => clearInterval(interval);
-  }, [worldData]);
-
-  // Search bar auto-suggest
+  // ✅ Handle search
   useEffect(() => {
-    if (!worldData || searchTerm.trim() === "") {
-      setFiltered([]);
+    if (!searchTerm.trim()) {
+      setSuggestions([]);
       return;
     }
-    const list = worldData
+    const results = countries
       .map((c) => c.properties.name)
       .filter((n) => n.toLowerCase().includes(searchTerm.toLowerCase()))
-      .slice(0, 10);
-    setFiltered(list);
-  }, [searchTerm, worldData]);
+      .slice(0, 8);
+    setSuggestions(results);
+  }, [searchTerm, countries]);
 
-  // HLS IPTV support
+  // ✅ Setup HLS playback
   useEffect(() => {
     if (selectedChannel && selectedChannel.type === "iptv") {
       const video = document.getElementById("hls-player");
@@ -124,8 +114,6 @@ export default function GengasTV() {
           hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
         } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
           video.src = selectedChannel.url;
-        } else {
-          console.error("❌ HLS not supported in this browser");
         }
       }
     }
@@ -135,10 +123,8 @@ export default function GengasTV() {
     <div className="relative h-screen w-full bg-black text-white overflow-hidden">
       {/* Space background */}
       <div
+        className="absolute inset-0"
         style={{
-          position: "absolute",
-          width: "100%",
-          height: "100%",
           background:
             "radial-gradient(circle at 50% 50%, #000010, #000000) url('https://www.transparenttextures.com/patterns/stardust.png')",
           backgroundSize: "contain",
@@ -146,33 +132,33 @@ export default function GengasTV() {
         }}
       ></div>
 
-      {/* Header bar */}
-      <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/70 backdrop-blur-md z-20 border-b border-cyan-700">
-        <h1 className="text-2xl font-bold text-cyan-400 tracking-wide">🌍 Genga TV</h1>
+      {/* Top Bar */}
+      <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/70 border-b border-cyan-600 z-20">
+        <h1 className="text-2xl font-bold text-cyan-400">🌐 Genga TV</h1>
         <div className="relative">
           <input
             type="text"
-            placeholder="Filter Countries..."
+            placeholder="Search country..."
             className="px-3 py-2 rounded bg-black/70 text-white outline-none w-64"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          {filtered.length > 0 && (
-            <div className="absolute bg-black/90 text-white mt-1 w-64 rounded shadow-lg max-h-64 overflow-y-auto">
-              {filtered.map((c) => (
+          {suggestions.length > 0 && (
+            <div className="absolute bg-black/90 text-white mt-1 w-64 rounded shadow-lg max-h-64 overflow-y-auto z-30">
+              {suggestions.map((s, i) => (
                 <div
-                  key={c}
+                  key={i}
                   className="px-3 py-2 hover:bg-cyan-700 cursor-pointer"
                   onClick={() => {
-                    const found = worldData.find(
-                      (d) => d.properties.name.toLowerCase() === c.toLowerCase()
+                    const c = countries.find(
+                      (x) => x.properties.name.toLowerCase() === s.toLowerCase()
                     );
-                    if (found) handleClick(found);
+                    if (c) handleClick(c);
                     setSearchTerm("");
-                    setFiltered([]);
+                    setSuggestions([]);
                   }}
                 >
-                  {c}
+                  {s}
                 </div>
               ))}
             </div>
@@ -180,26 +166,26 @@ export default function GengasTV() {
         </div>
       </div>
 
-      {/* Globe */}
+      {/* 🌍 Globe */}
       <div className="absolute inset-0 z-10">
-        {worldData && (
-          <Globe
-            ref={globeRef}
-            globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-            backgroundColor="rgba(0,0,0,0)"
-          />
-        )}
+        <Globe
+          ref={globeRef}
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+          backgroundColor="rgba(0,0,0,0)"
+        />
       </div>
 
-      {/* Sidebar */}
+      {/* 📺 Sidebar */}
       {selectedCountry && (
-        <div className="absolute right-0 top-0 h-full w-80 bg-black/85 p-4 overflow-y-auto z-30 backdrop-blur-lg border-l border-cyan-700">
-          <h2 className="text-xl font-bold text-cyan-400 mb-3">{selectedCountry.name}</h2>
+        <div className="absolute right-0 top-0 h-full w-80 bg-black/85 p-4 overflow-y-auto z-30 border-l border-cyan-700">
+          <h2 className="text-xl font-bold text-cyan-400 mb-3">
+            {selectedCountry.name}
+          </h2>
           {selectedCountry.channels?.length > 0 ? (
             selectedCountry.channels.map((ch, i) => (
               <div
                 key={i}
-                className="p-2 border-b border-gray-700 hover:bg-cyan-800 cursor-pointer transition"
+                className="p-2 border-b border-gray-700 hover:bg-cyan-800 cursor-pointer"
                 onClick={() => setSelectedChannel(ch)}
               >
                 <div className="font-semibold">{ch.name}</div>
@@ -212,10 +198,12 @@ export default function GengasTV() {
         </div>
       )}
 
-      {/* Player */}
+      {/* ▶ Player */}
       {selectedChannel && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 bg-black/90 rounded-xl shadow-lg p-4 w-[640px]">
-          <h3 className="text-lg font-bold mb-2 text-cyan-400">{selectedChannel.name}</h3>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 bg-black/90 rounded-xl p-4 w-[640px] border border-cyan-700 shadow-lg">
+          <h3 className="text-lg font-bold mb-2 text-cyan-400">
+            {selectedChannel.name}
+          </h3>
           {selectedChannel.type === "youtube" ? (
             <iframe
               className="w-full h-96 rounded-lg"
