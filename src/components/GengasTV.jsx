@@ -11,49 +11,49 @@ export default function GengasTV() {
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [countryChannels, setCountryChannels] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Load world map + channel data
+  // Load world and channels
   useEffect(() => {
     (async () => {
       try {
-        console.log("Loading world data...");
         const world = await fetch("/world-110m.json").then((res) => res.json());
         const features = topojson.feature(
           world,
           world.objects.countries
         ).features;
         setCountries(features);
-        console.log("Loaded", features.length, "countries");
       } catch (err) {
-        console.error("Failed to load world JSON:", err);
+        console.error("Failed to load world map:", err);
       }
 
       const ch = await loadChannels();
-      if (ch) {
-        setChannels(ch);
-        console.log("Loaded channels:", Object.keys(ch).length);
-      }
+      if (ch) setChannels(ch);
       setIsLoading(false);
     })();
   }, []);
 
-  // Fix auto black globe — ensure material applied immediately
+  // Configure globe after data load
   useEffect(() => {
     if (globeEl.current) {
-      globeEl.current.controls().autoRotate = false;
-      globeEl.current.controls().enableZoom = true;
-      globeEl.current.controls().enablePan = false;
+      const controls = globeEl.current.controls();
+      controls.autoRotate = false;
+      controls.enableZoom = true;
+      controls.enablePan = false;
+      globeEl.current.pointOfView({ altitude: 2.2 }); // 100% zoom out
     }
   }, [countries]);
 
+  // Handle clicking a country
   const handleClick = (country) => {
     if (!country?.properties?.name) return;
     const name = country.properties.name.trim();
-    console.log("Clicked:", name);
+    selectCountry(name);
+  };
 
+  // Select by name (used by click or search)
+  const selectCountry = (name) => {
     setSelectedCountry(name);
-
-    // Match country name by exact key or close match
     const normalizedKeys = Object.keys(channels);
     const direct = channels[name];
     const partialKey = normalizedKeys.find(
@@ -70,20 +70,31 @@ export default function GengasTV() {
 
     if (data?.channels?.length) {
       setCountryChannels(data.channels);
-      console.log(`Found ${data.channels.length} channels for ${name}`);
+      console.log(`Loaded ${data.channels.length} channels for ${name}`);
     } else {
       setCountryChannels([]);
-      console.warn(`No channels found for ${name}`);
+      console.warn(`No channels for ${name}`);
+    }
+
+    // Auto focus globe on selected country
+    if (globeEl.current && countries.length > 0) {
+      const found = countries.find(
+        (c) => c.properties.name.toLowerCase() === name.toLowerCase()
+      );
+      if (found) {
+        const centroid = globeEl.current.getCoords(found);
+        globeEl.current.pointOfView({ lat: centroid.lat, lng: centroid.lng, altitude: 1.3 }, 1000);
+      }
     }
   };
 
-  // Distinct colors per country
+  // Color generation (unique per country)
   const getCountryColor = (d) => {
     const hash = d.properties.name
       .split("")
       .reduce((a, c) => a + c.charCodeAt(0), 0);
     const hue = hash % 360;
-    return `hsl(${hue}, 70%, 50%)`;
+    return `hsl(${hue}, 70%, 55%)`;
   };
 
   if (isLoading)
@@ -113,13 +124,55 @@ export default function GengasTV() {
           top: "10px",
           left: "10px",
           color: "#fff",
-          fontSize: "22px",
+          fontSize: "24px",
           fontWeight: "bold",
-          zIndex: 10,
-          textShadow: "0 0 8px #0ff",
+          textShadow: "0 0 10px #00ffff",
+          zIndex: 20,
         }}
       >
         🌍 Genga Garden TV
+      </div>
+
+      {/* Search bar */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50px",
+          left: "10px",
+          zIndex: 20,
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search country..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && selectCountry(searchTerm)}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "8px",
+            border: "1px solid #0ff",
+            background: "rgba(0,0,0,0.6)",
+            color: "#fff",
+            fontSize: "14px",
+            width: "200px",
+          }}
+        />
+        <button
+          onClick={() => selectCountry(searchTerm)}
+          style={{
+            marginLeft: "8px",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            background: "#0ff",
+            border: "none",
+            cursor: "pointer",
+            color: "#000",
+            fontWeight: "bold",
+          }}
+        >
+          🔍
+        </button>
       </div>
 
       {/* Globe */}
@@ -129,31 +182,29 @@ export default function GengasTV() {
         backgroundColor="#000"
         polygonsData={countries}
         polygonCapColor={getCountryColor}
-        polygonSideColor={() => "rgba(0,0,0,0.15)"}
+        polygonSideColor={() => "rgba(0,0,0,0.2)"}
         polygonStrokeColor={() => "#111"}
         polygonAltitude={0.015}
         onPolygonClick={handleClick}
-        width={window.innerWidth}
-        height={window.innerHeight}
       />
 
-      {/* Sidebar */}
+      {/* Sidebar for country */}
       {selectedCountry && (
         <div
           style={{
             position: "absolute",
             right: 0,
             top: 0,
-            height: "100vh",
+            height: "100%",
             width: "340px",
-            background: "rgba(0,0,0,0.9)",
+            background: "rgba(0,0,0,0.92)",
             color: "#fff",
             overflowY: "auto",
             padding: "20px",
             borderLeft: "2px solid #0ff",
           }}
         >
-          <h2 style={{ marginTop: 0, color: "#0ff" }}>{selectedCountry}</h2>
+          <h2 style={{ color: "#0ff", marginTop: 0 }}>{selectedCountry}</h2>
 
           {countryChannels.length > 0 ? (
             countryChannels.map((ch, i) => (
