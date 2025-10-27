@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Globe from "react-globe.gl";
 import * as topojson from "topojson-client";
+import * as THREE from "three";
 import { geoCentroid } from "d3-geo";
 import { loadChannels } from "../utils/fetchChannels";
 
