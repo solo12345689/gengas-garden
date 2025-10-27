@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import Globe from "react-globe.gl";
 import * as topojson from "topojson-client";
 import { loadChannels } from "../utils/fetchChannels";
-import { motion, AnimatePresence } from "framer-motion";
-import { FaGlobe, FaSearch, FaTimes } from "react-icons/fa";
 import * as THREE from "three";
 
 export default function GengasTV() {
@@ -11,115 +9,127 @@ export default function GengasTV() {
   const [worldData, setWorldData] = useState(null);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [selectedChannel, setSelectedChannel] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [filteredCountries, setFilteredCountries] = useState([]);
+  const [selectedChannel, setSelectedChannel] = useState(null);
 
-  // Load map and channel data
+  // Load world map
   useEffect(() => {
-    (async () => {
-      try {
-        const world = await fetch("/world-110m.json").then((r) => r.json());
-        const ch = await loadChannels();
-        const features = topojson.feature(world, world.objects.countries);
+    fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+      .then((res) => res.json())
+      .then((world) => {
+        const features = topojson.feature(world, world.objects.countries)
+          .features;
         setWorldData(features);
-        setChannels(ch);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error loading data:", err);
-      }
-    })();
+      });
   }, []);
 
-  // Match country name smartly
-  const findCountryKey = (name) => {
-    const lower = name.toLowerCase();
-    const exact = Object.keys(channels).find(
-      (key) => key.toLowerCase() === lower
-    );
-    if (exact) return exact;
-
-    const partial = Object.keys(channels).find((key) =>
-      key.toLowerCase().includes(lower)
-    );
-    return partial || null;
-  };
-
-  // When clicking a country on the globe
-  const handleCountryClick = (d) => {
-    const name = d.properties.name;
-    const match = findCountryKey(name);
-    if (match) setSelectedCountry(match);
-    else {
-      console.log(`No match for ${name}`);
-      setSelectedCountry(null);
+  // Load channels
+  useEffect(() => {
+    async function loadAll() {
+      const ch = await loadChannels();
+      console.log("✅ Channels loaded:", Object.keys(ch).slice(0, 10));
+      setChannels(ch);
     }
-    setSelectedChannel(null);
+    loadAll();
+  }, []);
+
+  // Search filter
+  useEffect(() => {
+    if (!worldData) return;
+    const results = worldData
+      .map((c) => c.properties.name)
+      .filter((n) =>
+        n.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    setFilteredCountries(results.slice(0, 10));
+  }, [searchTerm, worldData]);
+
+  // When clicking country
+  const handleCountryClick = (country) => {
+    if (!country || !country.properties) return;
+    const name = country.properties.name.trim();
+    console.log("🌍 Clicked:", name);
+
+    // Try to find best key
+    let foundKey =
+      Object.keys(channels).find(
+        (k) => k.toLowerCase() === name.toLowerCase()
+      ) ||
+      Object.keys(channels).find((k) =>
+        k.toLowerCase().includes(name.toLowerCase())
+      );
+
+    if (foundKey) {
+      setSelectedCountry({
+        name: foundKey,
+        channels: channels[foundKey].channels || [],
+      });
+      console.log("✅ Matched:", foundKey);
+    } else {
+      console.warn("❌ No match for", name);
+      setSelectedCountry({ name, channels: [] });
+    }
   };
 
-  // When clicking a channel
-  const handleChannelSelect = (ch) => {
+  // Fix Globe colors
+  useEffect(() => {
+    if (!globeRef.current) return;
+    const globe = globeRef.current;
+    globe
+      .polygonsData(worldData || [])
+      .polygonAltitude(0.01)
+      .polygonCapColor(() => "#" + Math.floor(Math.random() * 16777215).toString(16))
+      .polygonSideColor(() => "rgba(0,0,0,0.2)")
+      .onPolygonClick(handleCountryClick);
+  }, [worldData, channels]);
+
+  const playChannel = (ch) => {
     setSelectedChannel(ch);
   };
 
-  const closePlayer = () => setSelectedChannel(null);
-
-  // Search & auto-suggest
-  const handleSearch = (e) => {
-    const term = e.target.value;
-    setSearchTerm(term);
-    if (!term.trim()) {
-      setSuggestions([]);
-      return;
-    }
-    const matches = Object.keys(channels).filter((c) =>
-      c.toLowerCase().includes(term.toLowerCase())
-    );
-    setSuggestions(matches.slice(0, 8));
-  };
-
-  const handleSuggestionClick = (country) => {
-    setSelectedCountry(country);
-    setSuggestions([]);
-    setSearchTerm(country);
-  };
-
-  if (loading)
-    return (
-      <div className="flex h-screen items-center justify-center text-cyan-400 bg-black text-xl">
-        Loading Genga TV...
-      </div>
-    );
-
   return (
-    <div className="relative w-full h-screen overflow-hidden text-white bg-black">
+    <div className="relative h-screen w-full bg-black text-white overflow-hidden">
+      {/* Background Stars */}
+      <div
+        style={{
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          background: "radial-gradient(circle at 50% 50%, #000010, #000000)",
+          zIndex: 0,
+        }}
+      ></div>
+
       {/* Top Bar */}
-      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-6 py-3 bg-black/60 backdrop-blur-md border-b border-cyan-700 z-50">
-        <div className="flex items-center gap-2">
-          <FaGlobe className="text-cyan-400" />
-          <h1 className="text-cyan-400 font-bold text-2xl">Genga TV</h1>
-        </div>
+      <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/40 backdrop-blur-sm z-20">
+        <h1 className="text-2xl font-bold text-cyan-400 flex items-center gap-2">
+          🌍 Genga TV
+        </h1>
         <div className="relative">
-          <div className="flex items-center bg-white/10 px-3 py-2 rounded-lg gap-2">
-            <FaSearch className="text-cyan-400" />
-            <input
-              type="text"
-              placeholder="Search country..."
-              value={searchTerm}
-              onChange={handleSearch}
-              className="bg-transparent text-white focus:outline-none placeholder-gray-400 w-56"
-            />
-          </div>
-          {suggestions.length > 0 && (
-            <div className="absolute mt-1 bg-black/80 border border-cyan-700 rounded-lg max-h-48 overflow-y-auto w-full z-50">
-              {suggestions.map((s, i) => (
+          <input
+            className="px-3 py-2 rounded bg-black/60 text-white outline-none w-64"
+            placeholder="Search countries..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {filteredCountries.length > 0 && (
+            <div className="absolute bg-black/90 text-white mt-1 w-64 rounded shadow-lg">
+              {filteredCountries.map((country) => (
                 <div
-                  key={i}
-                  onClick={() => handleSuggestionClick(s)}
-                  className="px-3 py-1 hover:bg-cyan-600/40 cursor-pointer"
+                  key={country}
+                  className="px-3 py-2 hover:bg-cyan-600 cursor-pointer"
+                  onClick={() => {
+                    const match = worldData.find(
+                      (c) =>
+                        c.properties.name.toLowerCase() ===
+                        country.toLowerCase()
+                    );
+                    if (match) handleCountryClick(match);
+                    setSearchTerm("");
+                  }}
                 >
-                  {s}
+                  {country}
                 </div>
               ))}
             </div>
@@ -128,116 +138,67 @@ export default function GengasTV() {
       </div>
 
       {/* Globe */}
-      <div className="absolute inset-0" style={{ zIndex: 1 }}>
+      <div className="absolute inset-0 z-10">
         {worldData && (
           <Globe
             ref={globeRef}
             globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
             backgroundColor="rgba(0,0,0,0)"
-            polygonsData={worldData.features.filter(
-              (d) => d.properties.ISO_A2 !== "AQ"
-            )}
-            polygonCapColor={() =>
-              `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${
-                Math.random() * 255
-              }, 0.9)`
-            }
-            polygonSideColor={() => "rgba(0,0,0,0.25)"}
-            polygonStrokeColor={() => "#111"}
-            onPolygonClick={handleCountryClick}
           />
         )}
       </div>
 
       {/* Sidebar */}
-      <AnimatePresence>
-        {selectedCountry && (
-          <motion.div
-            key="sidebar"
-            initial={{ x: 400, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 400, opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="absolute right-0 top-16 w-80 h-[85vh] bg-black/75 backdrop-blur-md overflow-y-auto p-4 border-l border-cyan-600 z-40"
-          >
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-cyan-300 text-lg font-semibold">
-                {selectedCountry}
-              </h2>
-              <button
-                onClick={() => setSelectedCountry(null)}
-                className="text-cyan-400 hover:text-red-400"
+      {selectedCountry && (
+        <div className="absolute right-0 top-0 h-full w-80 bg-black/80 p-4 overflow-y-auto z-30 backdrop-blur-lg">
+          <h2 className="text-xl font-bold text-cyan-400 mb-2">
+            {selectedCountry.name}
+          </h2>
+          {selectedCountry.channels?.length > 0 ? (
+            selectedCountry.channels.map((ch, i) => (
+              <div
+                key={i}
+                className="p-2 border-b border-gray-700 hover:bg-cyan-800 cursor-pointer"
+                onClick={() => playChannel(ch)}
               >
-                <FaTimes />
-              </button>
-            </div>
-
-            {channels[selectedCountry]?.channels?.length > 0 ? (
-              channels[selectedCountry].channels.map((ch, i) => (
-                <div
-                  key={i}
-                  onClick={() => handleChannelSelect(ch)}
-                  className={`cursor-pointer border-b border-gray-700 py-2 hover:text-cyan-300 transition ${
-                    selectedChannel?.name === ch.name
-                      ? "text-cyan-400"
-                      : "text-white"
-                  }`}
-                >
-                  {ch.name}
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-400">No channels available</p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <div className="font-semibold">{ch.name}</div>
+                <div className="text-sm opacity-70">{ch.type}</div>
+              </div>
+            ))
+          ) : (
+            <p className="opacity-70">No channels available.</p>
+          )}
+        </div>
+      )}
 
       {/* Player */}
-      <AnimatePresence>
-        {selectedChannel && (
-          <motion.div
-            key="player"
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.7 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-30"
+      {selectedChannel && (
+        <div className="absolute top-1/2 left-1/2 z-40 -translate-x-1/2 -translate-y-1/2 bg-black/90 rounded-xl shadow-lg p-4 w-[640px]">
+          <h3 className="text-lg font-bold mb-2 text-cyan-400">
+            {selectedChannel.name}
+          </h3>
+          {selectedChannel.type === "youtube" ? (
+            <iframe
+              className="w-full h-96 rounded-lg"
+              src={selectedChannel.url}
+              allowFullScreen
+            ></iframe>
+          ) : (
+            <video
+              className="w-full h-96 rounded-lg"
+              controls
+              autoPlay
+              src={selectedChannel.url}
+            ></video>
+          )}
+          <button
+            className="mt-3 bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded"
+            onClick={() => setSelectedChannel(null)}
           >
-            <div
-              className="relative w-[80%] max-w-3xl bg-black border border-cyan-500 rounded-2xl shadow-xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={closePlayer}
-                className="absolute top-3 right-3 text-cyan-400 hover:text-red-400 text-2xl"
-              >
-                <FaTimes />
-              </button>
-              <div className="p-4 text-cyan-300 text-lg font-semibold">
-                {selectedChannel.name}
-              </div>
-              <div className="w-full aspect-video">
-                {selectedChannel.type === "youtube" ? (
-                  <iframe
-                    src={selectedChannel.url}
-                    title={selectedChannel.name}
-                    allowFullScreen
-                    className="w-full h-full rounded-b-2xl"
-                  />
-                ) : (
-                  <video
-                    src={selectedChannel.url}
-                    controls
-                    autoPlay
-                    className="w-full h-full rounded-b-2xl"
-                  />
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            Close
+          </button>
+        </div>
+      )}
     </div>
   );
 }
