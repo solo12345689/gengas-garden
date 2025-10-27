@@ -227,7 +227,8 @@ const handleClick = (feat) => {
         ) : (
           <p style={{ opacity: 0.7 }}>Select a country to view channels</p>
         )}
-      </div>
+            </div>
     </div>
   );
-}
+} // ✅ this closes the function
+export default GengasTV; // ✅ final line
