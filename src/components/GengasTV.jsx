@@ -1,303 +1,221 @@
 import React, { useEffect, useRef, useState } from "react";
-import Globe from "globe.gl";
+import Globe from "react-globe.gl";
+import * as THREE from "three";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaTimes, FaGlobe, FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaTimes, FaSearch } from "react-icons/fa";
 import fetchChannels from "../utils/fetchChannels";
 
-const GengasTV = () => {
+export default function GengasTV() {
   const globeRef = useRef();
-  const [globeReady, setGlobeReady] = useState(false);
   const [countries, setCountries] = useState([]);
-  const [channels, setChannels] = useState([]);
+  const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
-  const [showSearch, setShowSearch] = useState(true);
-  const [showBackButton, setShowBackButton] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filteredCountries, setFilteredCountries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // 🌍 Load countries and channels
+  // 🌍 Load world and channels
   useEffect(() => {
-    fetch("/countries.geojson")
-      .then((res) => res.json())
-      .then((data) => {
-        setCountries(data.features);
-        console.log("🌍 Loaded", data.features.length, "countries");
-      });
+    async function loadData() {
+      try {
+        const worldRes = await fetch("/countries.geojson");
+        const world = await worldRes.json();
+        setCountries(world.features);
+        console.log(`🌍 Loaded ${world.features.length} countries`);
+      } catch (err) {
+        console.error("❌ Failed to load countries.geojson", err);
+      }
 
-    fetchChannels().then((data) => {
-      setChannels(data);
-      console.log("✅ Channels loaded:", data.length);
-    });
+      const data = await fetchChannels();
+      if (!data || Object.keys(data).length === 0) {
+        console.warn("⚠️ No channels loaded (empty or undefined)");
+      } else {
+        console.log(`✅ Channels loaded: ${Object.keys(data).length}`);
+        setChannels(data);
+      }
+      setLoading(false);
+    }
+    loadData();
   }, []);
 
-  // 🌐 Initialize Globe
+  // 🎨 Colorful countries
   useEffect(() => {
-    if (globeRef.current && !globeReady && countries.length > 0) {
-      const globe = Globe()(globeRef.current);
-      globe
-        .globeImageUrl(
-          "//unpkg.com/three-globe/example/img/earth-dark.jpg"
-        )
-        .backgroundColor("#000")
-        .showAtmosphere(true)
-        .atmosphereColor("cyan")
-        .atmosphereAltitude(0.25)
-        .polygonsData(countries)
-        .polygonCapColor(() => `rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.9)`)
-        .polygonSideColor(() => "rgba(0,100,255,0.15)")
-        .polygonStrokeColor(() => "#111")
-        .onPolygonClick((polygon) => {
-          const country = polygon.properties.ADMIN;
-          console.log("🌍 Clicked:", country);
-          setSelectedCountry(country);
-          setShowSearch(false);
-          setShowBackButton(true);
-        })
-        .polygonsTransitionDuration(300);
-
-      setGlobeReady(true);
+    const globe = globeRef.current;
+    if (!globe || countries.length === 0) return;
+    if (typeof globe.polygonsData !== "function") {
+      console.warn("⚠️ Globe init skipped (not ready yet)");
+      return;
     }
-  }, [countries, globeReady]);
 
-  // 🎬 Select Channel
-  const openChannel = (ch) => {
-    setSelectedChannel(ch);
-    setShowSearch(false);
-    setShowBackButton(false);
-  };
+    globe
+      .polygonsData(countries)
+      .polygonCapColor(() =>
+        new THREE.Color(`hsl(${Math.random() * 360}, 60%, 55%)`)
+      )
+      .polygonSideColor(() => "rgba(0, 100, 255, 0.15)")
+      .polygonStrokeColor(() => "#111")
+      .onPolygonClick(handleCountryClick);
+  }, [countries]);
 
-  // ❌ Close Player → back to search
-  const closePlayer = () => {
+  // 🖱️ Handle clicking a country
+  const handleCountryClick = (country) => {
+    const name = country?.properties?.ADMIN;
+    if (!name) return;
     setSelectedChannel(null);
-    setShowSearch(true);
-    setShowBackButton(false);
+    setSelectedCountry(name);
+    setSidebarOpen(true);
   };
 
-  // 🔙 Back to Globe
-  const handleBack = () => {
-    setSelectedCountry(null);
-    setShowSearch(true);
-    setShowBackButton(false);
+  // 🔍 Handle search and autosuggest
+  const handleSearchChange = (e) => {
+    const text = e.target.value;
+    setSearch(text);
+    if (text.trim() === "") {
+      setFilteredCountries([]);
+      return;
+    }
+    const results = countries
+      .map((c) => c.properties.ADMIN)
+      .filter((n) => n.toLowerCase().includes(text.toLowerCase()))
+      .slice(0, 10);
+    setFilteredCountries(results);
   };
+
+  const handleSearchSelect = (countryName) => {
+    setSelectedCountry(countryName);
+    setFilteredCountries([]);
+    setSearch(countryName);
+  };
+
+  const currentChannels = selectedCountry
+    ? channels[selectedCountry]?.channels || []
+    : [];
 
   return (
-    <div
-      style={{
-        position: "relative",
-        height: "100vh",
-        width: "100%",
-        background: "radial-gradient(circle at center, #000 60%, #001019 100%)",
-        overflow: "hidden",
-      }}
-    >
-      {/* 🌐 Header */}
-      <div
-        style={{
-          position: "absolute",
-          top: 10,
-          left: 20,
-          display: "flex",
-          alignItems: "center",
-          color: "#19e6d1",
-          fontWeight: "bold",
-          fontSize: 22,
-          zIndex: 10,
-        }}
-      >
-        <FaGlobe style={{ marginRight: 10 }} />
-        Genga TV
-      </div>
+    <div className="relative w-screen h-screen bg-black text-white overflow-hidden">
+      {/* 🌌 Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,#0a0a1a_0%,#000_100%)] z-0" />
 
-      {/* 🔙 Back Button */}
-      {showBackButton && (
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleBack}
-          style={{
-            position: "absolute",
-            top: 10,
-            right: 20,
-            background: "#8FE360",
-            color: "#000",
-            border: "none",
-            borderRadius: 10,
-            padding: "8px 16px",
-            fontWeight: "bold",
-            cursor: "pointer",
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-        >
-          <FaArrowLeft /> Back
-        </motion.button>
-      )}
-
-      {/* 🌎 Globe */}
-      <div
+      {/* 🌍 Globe */}
+      <Globe
         ref={globeRef}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-        }}
+        globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+        backgroundColor="rgba(0,0,0,0)"
+        height={window.innerHeight}
+        width={window.innerWidth}
       />
 
-      {/* 🔍 Channel List (Search Section) */}
-      <AnimatePresence>
-        {showSearch && selectedCountry && (
-          <motion.div
-            initial={{ x: 300, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 300, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 100 }}
-            style={{
-              position: "absolute",
-              right: 0,
-              top: 0,
-              height: "100%",
-              width: 300,
-              background: "rgba(0,0,0,0.85)",
-              borderLeft: "1px solid #19e6d1",
-              color: "white",
-              overflowY: "auto",
-              padding: "20px 12px",
-              zIndex: 5,
-            }}
-          >
-            <h2 style={{ color: "#19e6d1" }}>{selectedCountry}</h2>
+      {/* 🔝 Top bar */}
+      <div className="absolute top-0 left-0 w-full flex items-center justify-between px-6 py-4 bg-black/50 backdrop-blur-md z-10">
+        <h1 className="text-2xl font-bold text-blue-400">🌍 Genga TV</h1>
+        <div className="flex items-center gap-3">
+          {selectedCountry && (
+            <button
+              onClick={() => setSelectedCountry(null)}
+              className="text-gray-300 hover:text-white transition"
+              title="Back to globe"
+            >
+              <FaArrowLeft size={20} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 🔍 Search box */}
+      {!selectedChannel && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-80 z-10">
+          <div className="relative">
+            <FaSearch className="absolute left-3 top-3 text-gray-400" />
             <input
-              type="text"
-              placeholder={`Search in ${selectedCountry}`}
-              style={{
-                width: "100%",
-                padding: "6px 10px",
-                borderRadius: 8,
-                marginBottom: 12,
-                border: "1px solid #19e6d1",
-                background: "#000",
-                color: "#19e6d1",
-              }}
+              value={search}
+              onChange={handleSearchChange}
+              placeholder="Search for a country..."
+              className="w-full bg-gray-800/80 text-white pl-10 pr-3 py-2 rounded-lg outline-none border border-gray-600 focus:border-blue-400 transition"
             />
-            {channels
-              .filter(
-                (ch) =>
-                  ch.country?.toLowerCase() ===
-                  selectedCountry.toLowerCase()
-              )
-              .map((ch, i) => (
+          </div>
+          {filteredCountries.length > 0 && (
+            <ul className="absolute bg-gray-900/90 mt-1 rounded-lg w-full border border-gray-700 max-h-48 overflow-y-auto">
+              {filteredCountries.map((c) => (
+                <li
+                  key={c}
+                  onClick={() => handleSearchSelect(c)}
+                  className="px-3 py-2 hover:bg-blue-600 cursor-pointer"
+                >
+                  {c}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* 📺 Sidebar */}
+      <AnimatePresence>
+        {selectedCountry && !selectedChannel && (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 100, damping: 15 }}
+            className="absolute right-0 top-0 h-full w-80 bg-gray-900/95 backdrop-blur-lg p-4 overflow-y-auto z-20"
+          >
+            <h2 className="text-xl font-semibold mb-4 text-blue-300">
+              {selectedCountry}
+            </h2>
+            {currentChannels.length > 0 ? (
+              currentChannels.map((ch, i) => (
                 <div
                   key={i}
-                  onClick={() => openChannel(ch)}
-                  style={{
-                    padding: "10px 0",
-                    borderBottom: "1px solid rgba(255,255,255,0.1)",
-                    cursor: "pointer",
-                  }}
+                  onClick={() => setSelectedChannel(ch)}
+                  className="p-2 bg-gray-800 hover:bg-blue-700 rounded-md mb-2 cursor-pointer"
                 >
-                  <div style={{ fontWeight: "bold" }}>{ch.name}</div>
-                  <div style={{ fontSize: 12, opacity: 0.7 }}>
-                    {ch.type}
-                  </div>
+                  <p className="font-medium">{ch.name}</p>
+                  <p className="text-xs text-gray-400">{ch.language}</p>
                 </div>
-              ))}
+              ))
+            ) : (
+              <p className="text-gray-400">No channels available</p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 🎬 Player (Centered) */}
+      {/* 🎬 Player overlay */}
       <AnimatePresence>
         {selectedChannel && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ type: "spring", stiffness: 120 }}
-            style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "min(90vw, 960px)",
-              height: "min(80vh, 540px)",
-              background: "#090f13",
-              borderRadius: 12,
-              boxShadow: "0 0 40px rgba(0,255,255,0.25)",
-              padding: "12px 16px",
-              zIndex: 1001,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-start",
-              alignItems: "center",
-              overflow: "hidden",
-            }}
+            key="player"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/90 flex items-center justify-center z-30"
           >
-            {/* Header */}
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <div style={{ color: "#19e6d1", fontWeight: 700, fontSize: 18 }}>
-                {selectedChannel.name}
-              </div>
-              <FaTimes
-                onClick={closePlayer}
-                style={{
-                  color: "#ff4c4c",
-                  cursor: "pointer",
-                  fontSize: 22,
-                  transition: "0.2s ease",
+            <div className="relative w-[80%] max-w-3xl bg-black rounded-xl overflow-hidden shadow-lg border border-gray-800">
+              <button
+                onClick={() => {
+                  setSelectedChannel(null);
+                  setSelectedCountry(null);
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.color = "#ff6666")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = "#ff4c4c")
-                }
-              />
-            </div>
+                className="absolute top-3 right-3 text-white hover:text-red-500 z-50"
+              >
+                <FaTimes size={22} />
+              </button>
 
-            {/* Video Area */}
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
               {selectedChannel.type === "youtube" ? (
                 <iframe
                   src={selectedChannel.url}
-                  title="player"
+                  title={selectedChannel.name}
+                  className="w-full h-[70vh]"
                   allowFullScreen
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    border: 0,
-                    borderRadius: 8,
-                  }}
                 />
               ) : (
                 <video
-                  id="genga-hls"
                   controls
                   autoPlay
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: 8,
-                    objectFit: "cover",
-                  }}
+                  className="w-full h-[70vh] bg-black"
+                  src={selectedChannel.url}
                 />
               )}
             </div>
@@ -306,6 +224,4 @@ const GengasTV = () => {
       </AnimatePresence>
     </div>
   );
-};
-
-export default GengasTV;
+}
