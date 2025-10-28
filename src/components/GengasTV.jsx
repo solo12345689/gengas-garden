@@ -37,11 +37,10 @@ export default function GengasTV() {
       .catch((err) => console.error("❌ Failed to load channels:", err));
   }, []);
 
-  // 🎨 Configure Globe
+  // 🎨 Configure Globe (multi-color)
   useEffect(() => {
     if (!globeRef.current || !worldData) return;
     const g = globeRef.current;
-    if (typeof g.polygonsData !== "function") return;
 
     const colors = [
       "#FF595E",
@@ -53,19 +52,22 @@ export default function GengasTV() {
       "#F4A261",
     ];
 
-    g
-      .polygonsData(worldData.features)
-      .polygonCapColor(() => colors[Math.floor(Math.random() * colors.length)])
-      .polygonSideColor(() => "rgba(0,0,0,0.25)")
-      .polygonStrokeColor(() => "#111")
-      .polygonAltitude(() => 0.015)
-      .onPolygonClick((feat) => {
-        const name = feat.properties.name;
-        if (channels[name]) setSelectedCountry(name);
-      });
+    // ensure correct API
+    if (typeof g.polygonsData === "function") {
+      g.polygonsData(worldData.features)
+        .polygonCapColor(() => colors[Math.floor(Math.random() * colors.length)])
+        .polygonSideColor(() => "rgba(0,0,0,0.25)")
+        .polygonStrokeColor(() => "#111")
+        .polygonAltitude(() => 0.015)
+        .onPolygonClick((feat) => {
+          const name = feat.properties.name;
+          if (channels[name]) setSelectedCountry(name);
+        });
+    }
 
     g.controls().autoRotate = true;
-    g.controls().autoRotateSpeed = 0.6;
+    g.controls().autoRotateSpeed = 0.7;
+    g.pointOfView({ lat: 20, lng: 0, altitude: 2 });
   }, [worldData, channels]);
 
   // 🔍 Search
@@ -86,14 +88,13 @@ export default function GengasTV() {
     setSearchOpen(false);
   };
 
+  // 🎬 Channel control
   const handleChannelClick = (ch) => {
-    setPlayerChannel(ch);
+    setPlayerChannel(ch); // directly switch to new channel
   };
 
   const handleClosePlayer = () => {
     setPlayerChannel(null);
-    setSelectedCountry(null);
-    setSearchOpen(false);
   };
 
   const selectedChannels = channels[selectedCountry]?.channels || [];
@@ -110,7 +111,7 @@ export default function GengasTV() {
       <div className="absolute inset-0 z-0">
         <Globe
           ref={globeRef}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
           backgroundColor="#000000"
         />
       </div>
@@ -122,58 +123,56 @@ export default function GengasTV() {
         </h1>
 
         {/* 🔍 Search */}
-        {!playerChannel && (
-          <motion.div
-            className="relative flex items-center"
-            animate={{ width: searchOpen ? 260 : 40 }}
-            transition={{ duration: 0.4 }}
+        <motion.div
+          className="relative flex items-center"
+          animate={{ width: searchOpen ? 260 : 40 }}
+          transition={{ duration: 0.4 }}
+        >
+          <button
+            onClick={() => setSearchOpen(!searchOpen)}
+            className="p-2 bg-cyan-500/20 rounded-full hover:bg-cyan-500/40"
           >
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 bg-cyan-500/20 rounded-full hover:bg-cyan-500/40"
-            >
-              <FaSearch className="text-cyan-400" />
-            </button>
+            <FaSearch className="text-cyan-400" />
+          </button>
 
-            <AnimatePresence>
-              {searchOpen && (
-                <motion.div
-                  initial={{ opacity: 0, x: 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 40 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute right-10"
-                >
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={handleSearch}
-                    placeholder="Search country..."
-                    className="p-2 pl-3 rounded-md bg-black/70 border border-white/20 text-white placeholder-gray-400 w-52 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                  />
-                  {suggestions.length > 0 && (
-                    <ul className="absolute right-0 mt-2 bg-black/90 border border-white/10 rounded-md text-left w-52">
-                      {suggestions.map((s) => (
-                        <li
-                          key={s}
-                          className="p-2 hover:bg-white/10 cursor-pointer"
-                          onClick={() => handleSelectSuggestion(s)}
-                        >
-                          {s}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        )}
+          <AnimatePresence>
+            {searchOpen && (
+              <motion.div
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 40 }}
+                transition={{ duration: 0.3 }}
+                className="absolute right-10"
+              >
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  placeholder="Search country..."
+                  className="p-2 pl-3 rounded-md bg-black/70 border border-white/20 text-white placeholder-gray-400 w-52 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                />
+                {suggestions.length > 0 && (
+                  <ul className="absolute right-0 mt-2 bg-black/90 border border-white/10 rounded-md text-left w-52 z-50">
+                    {suggestions.map((s) => (
+                      <li
+                        key={s}
+                        className="p-2 hover:bg-white/10 cursor-pointer"
+                        onClick={() => handleSelectSuggestion(s)}
+                      >
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
 
       {/* 📡 Sidebar Channel List */}
       <AnimatePresence>
-        {selectedCountry && !playerChannel && (
+        {selectedCountry && (
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
@@ -192,7 +191,11 @@ export default function GengasTV() {
                   <li
                     key={i}
                     onClick={() => handleChannelClick(ch)}
-                    className="p-2 hover:bg-white/10 cursor-pointer flex justify-between items-center"
+                    className={`p-2 flex justify-between items-center hover:bg-white/10 cursor-pointer ${
+                      playerChannel?.name === ch.name
+                        ? "bg-cyan-700/30 border-l-2 border-cyan-400"
+                        : ""
+                    }`}
                   >
                     {ch.name}
                     <FaPlay className="text-xs" />
@@ -212,10 +215,9 @@ export default function GengasTV() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.85 }}
             transition={{ duration: 0.4 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-50"
+            className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50"
           >
-            {/* Maintain 16:9 ratio */}
-            <div className="relative w-[80vw] max-w-5xl aspect-video bg-black rounded-lg shadow-lg overflow-hidden">
+            <div className="relative w-[80vw] max-w-5xl aspect-video bg-black rounded-lg shadow-lg overflow-hidden border border-cyan-700/40">
               <div className="absolute top-0 left-0 w-full flex justify-between items-center bg-cyan-900/50 px-4 py-2 z-10">
                 <h2 className="text-cyan-400 font-semibold text-lg">
                   {playerChannel.name}
@@ -228,7 +230,6 @@ export default function GengasTV() {
                 </button>
               </div>
 
-              {/* Player content */}
               <div className="absolute inset-0 mt-8">
                 {playerChannel.type === "youtube" ? (
                   <iframe
