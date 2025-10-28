@@ -319,73 +319,97 @@ export default function GengasTV() {
       </AnimatePresence>
 
       {/* 🎬 Centered Player */}
-      <AnimatePresence>
-        {selectedChannel && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ type: "spring", stiffness: 100 }}
-            style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "min(1000px, 90%)",
-              background: "#080f13",
-              borderRadius: 10,
-              boxShadow: "0 0 30px rgba(0,255,255,0.2)",
-              padding: 10,
-              zIndex: 50,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <div style={{ color: "#19e6d1", fontWeight: 700 }}>
-                {selectedChannel.name}
-              </div>
-              <FaTimes
-                onClick={closePlayer}
-                style={{
-                  color: "#f55",
-                  cursor: "pointer",
-                  fontSize: 22,
-                }}
-              />
-            </div>
+<AnimatePresence>
+  {selectedChannel && (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.85 }}
+      transition={{ type: "spring", stiffness: 100 }}
+      style={{
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: "min(85vw, 960px)",
+        height: "min(75vh, 540px)",
+        background: "#080f13",
+        borderRadius: 12,
+        boxShadow: "0 0 40px rgba(0,255,255,0.25)",
+        padding: "12px 16px",
+        zIndex: 100,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-start",
+        alignItems: "center",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
+        <div style={{ color: "#19e6d1", fontWeight: 700, fontSize: 18 }}>
+          {selectedChannel.name}
+        </div>
+        <FaTimes
+          onClick={closePlayer}
+          style={{
+            color: "#ff4c4c",
+            cursor: "pointer",
+            fontSize: 22,
+            transition: "0.2s ease",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#ff6666")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#ff4c4c")}
+        />
+      </div>
 
-            {selectedChannel.type === "youtube" ? (
-              <iframe
-                src={selectedChannel.url}
-                title="player"
-                style={{
-                  width: "100%",
-                  height: "60vh",
-                  border: 0,
-                  borderRadius: "6px",
-                }}
-                allowFullScreen
-              />
-            ) : (
-              <video
-                id="genga-hls"
-                controls
-                style={{
-                  width: "100%",
-                  height: "60vh",
-                  borderRadius: "6px",
-                }}
-              />
-            )}
-          </motion.div>
+      {/* Video Container */}
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        {selectedChannel.type === "youtube" ? (
+          <iframe
+            src={selectedChannel.url}
+            title="player"
+            allowFullScreen
+            style={{
+              width: "100%",
+              height: "100%",
+              border: 0,
+              borderRadius: 8,
+            }}
+          />
+        ) : (
+          <video
+            id="genga-hls"
+            controls
+            autoPlay
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: 8,
+              objectFit: "cover",
+            }}
+          />
         )}
-      </AnimatePresence>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
+      
     </div>
   );
 }
