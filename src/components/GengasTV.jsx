@@ -2,11 +2,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import Globe from "react-globe.gl";
 import * as topojson from "topojson-client";
-import { geoCentroid } from "d3-geo";
 import * as THREE from "three";
+import { geoCentroid } from "d3-geo";
 import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaBars, FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaSearch } from "react-icons/fa";
 import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
@@ -16,17 +16,20 @@ export default function GengasTV() {
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
 
-  // 🌍 Load globe data
+  // 🌍 Load world data
   useEffect(() => {
     fetch("/world-110m.json")
-      .then((r) => r.json())
+      .then((res) => res.json())
       .then((world) => {
         setWorldFeatures(topojson.feature(world, world.objects.countries).features);
+        console.log("🌍 Loaded world data");
       });
   }, []);
 
-  // 📺 Load channels
+  // 📡 Load channels
   useEffect(() => {
     (async () => {
       const data = await loadChannels();
@@ -40,25 +43,35 @@ export default function GengasTV() {
     if (globeRef.current) {
       const scene = globeRef.current.scene();
       if (!scene.getObjectByName("ambient")) {
-        const light = new THREE.AmbientLight(0xffffff, 0.9);
+        const light = new THREE.AmbientLight(0xffffff, 1);
         light.name = "ambient";
         scene.add(light);
       }
     }
   }, []);
 
-  const normalize = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const normalize = (str) => (str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
   // 🖱 Handle country click
   const handleCountryClick = (feature) => {
     const name = feature?.properties?.name;
     if (!name) return;
+    showCountry(name);
 
+    const centroid = geoCentroid(feature);
+    if (globeRef.current && centroid.length === 2) {
+      globeRef.current.pointOfView(
+        { lat: centroid[1], lng: centroid[0], altitude: 1.3 },
+        1200
+      );
+    }
+  };
+
+  const showCountry = (name) => {
     const keys = Object.keys(channels);
     const match =
       keys.find((k) => normalize(k) === normalize(name)) ||
       keys.find((k) => normalize(k).includes(normalize(name)));
-
     if (match) {
       setSelectedCountry({ name: match, channels: channels[match].channels });
       setSidebarOpen(true);
@@ -68,21 +81,26 @@ export default function GengasTV() {
       setSidebarOpen(true);
       setSelectedChannel(null);
     }
-
-    const centroid = geoCentroid(feature);
-    if (globeRef.current && centroid.length === 2) {
-      globeRef.current.pointOfView(
-        { lat: centroid[1], lng: centroid[0], altitude: 1.3 },
-        1000
-      );
-    }
   };
 
-  // 🎬 Handle HLS and YouTube playback
+  // 🔎 Handle search
+  useEffect(() => {
+    if (!search) {
+      setSuggestions([]);
+      return;
+    }
+    const results = Object.keys(channels).filter((c) =>
+      c.toLowerCase().includes(search.toLowerCase())
+    );
+    setSuggestions(results.slice(0, 8));
+  }, [search, channels]);
+
+  // 🎬 Handle IPTV playback
   useEffect(() => {
     if (!selectedChannel || selectedChannel.type !== "iptv") return;
     const video = document.getElementById("genga-hls");
     if (!video) return;
+
     if (selectedChannel.url.endsWith(".m3u8") && Hls.isSupported()) {
       const hls = new Hls();
       hls.loadSource(selectedChannel.url);
@@ -95,20 +113,19 @@ export default function GengasTV() {
     }
   }, [selectedChannel]);
 
-  // 🌈 Random color palette for countries
   const polygonColor = (f) => {
     const n = normalize(f.properties.name);
-    const hue = (n.charCodeAt(0) * 53) % 360;
-    return `hsl(${hue}, 70%, 50%)`;
+    const hue = (n.charCodeAt(0) * 57) % 360;
+    return `hsl(${hue}, 70%, 55%)`;
   };
 
-  // 🔙 Return to main globe
   const backToMain = () => {
     setSelectedCountry(null);
     setSelectedChannel(null);
     setSidebarOpen(false);
+    setSearch("");
     if (globeRef.current)
-      globeRef.current.pointOfView({ lat: 0, lng: 0, altitude: 2.2 }, 800);
+      globeRef.current.pointOfView({ lat: 0, lng: 0, altitude: 2.4 }, 800);
   };
 
   return (
@@ -117,34 +134,95 @@ export default function GengasTV() {
         height: "100vh",
         width: "100%",
         background: "radial-gradient(circle at 50% 50%, #000010, #000)",
-        position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* --- Top Navigation Bar --- */}
+      {/* 🧭 Top Bar */}
       <div
         style={{
           position: "absolute",
           top: 0,
           left: 0,
           right: 0,
-          zIndex: 30,
+          zIndex: 20,
+          background: "rgba(0,0,0,0.65)",
+          padding: "8px 16px",
+          borderBottom: "1px solid rgba(0,255,255,0.1)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          background: "rgba(0,0,0,0.55)",
-          borderBottom: "1px solid rgba(0,255,255,0.05)",
-          padding: "10px 16px",
+          backdropFilter: "blur(6px)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 20, color: "#19e6d1" }}>🌐</span>
-          <span style={{ fontWeight: 700, fontSize: 20, color: "#19e6d1" }}>
+          <span style={{ fontSize: 22 }}>🌐</span>
+          <span style={{ color: "#19e6d1", fontSize: 20, fontWeight: 700 }}>
             Genga TV
           </span>
         </div>
 
-        {selectedCountry ? (
+        {!selectedCountry && (
+          <div style={{ position: "relative", width: "260px" }}>
+            <input
+              type="text"
+              placeholder="Search country..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "6px 10px",
+                borderRadius: "6px",
+                border: "1px solid #19e6d1",
+                background: "#000",
+                color: "#19e6d1",
+                outline: "none",
+              }}
+            />
+            <FaSearch
+              style={{
+                position: "absolute",
+                top: "8px",
+                right: "10px",
+                color: "#19e6d1",
+              }}
+            />
+            {suggestions.length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "36px",
+                  left: 0,
+                  right: 0,
+                  background: "#0a0a0a",
+                  border: "1px solid #19e6d1",
+                  zIndex: 50,
+                  borderRadius: 6,
+                  overflow: "hidden",
+                }}
+              >
+                {suggestions.map((s, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      showCountry(s);
+                      setSearch("");
+                      setSuggestions([]);
+                    }}
+                    style={{
+                      padding: "6px 10px",
+                      cursor: "pointer",
+                      color: "#19e6d1",
+                    }}
+                  >
+                    {s}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {selectedCountry && (
           <button
             onClick={backToMain}
             style={{
@@ -152,52 +230,36 @@ export default function GengasTV() {
               border: "none",
               color: "#000",
               padding: "8px 14px",
-              borderRadius: "0 12px 12px 0",
+              borderRadius: "12px",
               cursor: "pointer",
               fontWeight: 600,
               display: "flex",
               alignItems: "center",
               gap: 8,
-              transition: "all 0.2s",
             }}
           >
             <FaArrowLeft /> Back
           </button>
-        ) : (
-          <button
-            onClick={() => setSidebarOpen((s) => !s)}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#19e6d1",
-              cursor: "pointer",
-              fontSize: 18,
-            }}
-          >
-            <FaBars />
-          </button>
         )}
       </div>
 
-      {/* --- Globe --- */}
-      <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
-        <Globe
-          ref={globeRef}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-          backgroundColor="rgba(0,0,0,0)"
-          polygonsData={worldFeatures}
-          polygonCapColor={polygonColor}
-          polygonSideColor={() => "rgba(0,0,0,0.3)"}
-          polygonStrokeColor={() => "#000"}
-          polygonAltitude={0.01}
-          onPolygonClick={handleCountryClick}
-          atmosphereColor="#18e0c0"
-          atmosphereAltitude={0.25}
-          showAtmosphere
-        />
-      </div>
+      {/* 🌍 Globe */}
+      <Globe
+        ref={globeRef}
+        globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
+        backgroundColor="rgba(0,0,0,0)"
+        polygonsData={worldFeatures}
+        polygonCapColor={polygonColor}
+        polygonSideColor={() => "rgba(0,0,0,0.2)"}
+        polygonStrokeColor={() => "#000"}
+        polygonAltitude={0.01}
+        onPolygonClick={handleCountryClick}
+        atmosphereColor="#18e0c0"
+        atmosphereAltitude={0.25}
+        showAtmosphere
+      />
 
-      {/* --- Sidebar --- */}
+      {/* 📜 Sidebar */}
       <AnimatePresence>
         {sidebarOpen && selectedCountry && !selectedChannel && (
           <motion.div
@@ -212,17 +274,17 @@ export default function GengasTV() {
               bottom: 0,
               width: 350,
               background: "rgba(12,12,12,0.95)",
-              borderLeft: "1px solid rgba(25,230,210,0.1)",
+              borderLeft: "1px solid rgba(25,230,210,0.2)",
               overflowY: "auto",
-              zIndex: 20,
               padding: 12,
+              zIndex: 20,
             }}
           >
             <div
               style={{
                 fontWeight: 700,
                 color: "#19e6d1",
-                marginBottom: 12,
+                marginBottom: 10,
                 fontSize: 18,
               }}
             >
@@ -234,32 +296,29 @@ export default function GengasTV() {
                 key={i}
                 onClick={() => {
                   setSelectedChannel(ch);
-                  setSidebarOpen(false); // auto-hide sidebar
+                  setSidebarOpen(false);
                 }}
                 style={{
                   padding: "10px 12px",
                   marginBottom: 6,
-                  background:
-                    selectedChannel?.name === ch.name
-                      ? "#0e2f2f"
-                      : "#0a0a0a",
+                  background: "#0a0a0a",
                   borderRadius: 6,
                   cursor: "pointer",
                 }}
               >
-                <div style={{ fontWeight: 700 }}>{ch.name}</div>
-                <div style={{ fontSize: 12, color: "#aaa" }}>{ch.type}</div>
+                <div style={{ fontWeight: 600 }}>{ch.name}</div>
+                <div style={{ fontSize: 12, color: "#999" }}>{ch.type}</div>
               </div>
             ))}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* --- Player (Centered) --- */}
+      {/* 🎬 Centered Player */}
       <AnimatePresence>
         {selectedChannel && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", stiffness: 100 }}
@@ -271,18 +330,12 @@ export default function GengasTV() {
               width: "min(1000px, 90%)",
               background: "#080f13",
               borderRadius: 10,
-              boxShadow: "0 0 40px rgba(0,0,0,0.6)",
+              boxShadow: "0 0 30px rgba(0,255,255,0.2)",
               padding: 10,
               zIndex: 50,
             }}
           >
-            <div
-              style={{
-                color: "#19e6d1",
-                fontWeight: 700,
-                marginBottom: 8,
-              }}
-            >
+            <div style={{ color: "#19e6d1", fontWeight: 700, marginBottom: 8 }}>
               {selectedChannel.name}
             </div>
             {selectedChannel.type === "youtube" ? (
@@ -305,4 +358,3 @@ export default function GengasTV() {
     </div>
   );
 }
-
