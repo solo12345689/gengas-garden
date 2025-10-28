@@ -21,7 +21,7 @@ export default function GengasTV() {
       .then((world) => {
         const features = topojson.feature(world, world.objects.countries).features;
         setCountries(features);
-        console.log("🌍 Loaded", features.length, "countries");
+        console.log("🌍 Loaded countries:", features.length);
       });
   }, []);
 
@@ -34,77 +34,79 @@ export default function GengasTV() {
     })();
   }, []);
 
-  // 🔤 Normalize name
+  // 🔤 Normalize for fuzzy matching
   const normalize = (str) =>
     str?.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "") || "";
 
-  // 🖱 Handle country click
+  // 🎯 Handle country click
   const handleCountryClick = (country) => {
-    const name = country?.properties?.name;
-    if (!name) return;
+    if (!country?.properties?.name) return;
+    const name = country.properties.name;
     const norm = normalize(name);
     const keys = Object.keys(channels);
-
-    let match =
+    const match =
       keys.find((k) => normalize(k) === norm) ||
       keys.find((k) => normalize(k).includes(norm)) ||
       keys.find((k) => norm.includes(normalize(k)));
 
     if (match) {
-      console.log("✅ Selected:", match);
+      console.log("✅ Clicked:", match);
       setSelectedCountry({ name: match, channels: channels[match].channels });
     } else {
-      console.log("⚠️ No match for", name);
+      console.log("⚠️ No channel match for", name);
       setSelectedCountry({ name, channels: [] });
     }
   };
 
-  // 🌈 Initialize the globe (delayed to avoid .polygonsData issue)
+  // 🌈 Initialize globe with multicolor polygons + working click
   useEffect(() => {
     if (!globeRef.current || countries.length === 0) return;
 
-    const timer = setTimeout(() => {
-      const globe = globeRef.current;
-      if (!globe || typeof globe.polygonsData !== "function") {
-        console.warn("⚠️ Globe not ready yet, retrying...");
-        return;
-      }
+    const globeObj =
+      globeRef.current.globe || globeRef.current; // 🧠 Handle version differences
 
-      // Add lighting
-      const scene = globe.scene();
-      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-      const light = new THREE.DirectionalLight(0xffffff, 0.7);
-      light.position.set(1, 1, 1);
-      scene.add(light);
+    // Safety check
+    if (typeof globeObj.polygonsData !== "function") {
+      console.warn("Globe not ready yet. Retrying...");
+      setTimeout(() => {
+        if (typeof globeObj.polygonsData === "function") {
+          globeObj.polygonsData(countries);
+        }
+      }, 300);
+      return;
+    }
 
-      // Randomized color palette
-      const colorize = (name) => {
-        const hue = (normalize(name).charCodeAt(0) * 37) % 360;
-        return `hsl(${hue}, 70%, 45%)`;
-      };
+    const colorFor = (name) => {
+      const hue = (normalize(name).charCodeAt(0) * 47) % 360;
+      return `hsl(${hue}, 70%, 50%)`;
+    };
 
-      globe
-        .polygonsData(countries)
-        .polygonCapColor((d) => colorize(d.properties.name))
-        .polygonSideColor(() => "rgba(80,80,80,0.25)")
-        .polygonStrokeColor(() => "#000")
-        .polygonAltitude(0.01)
-        .onPolygonClick(handleCountryClick);
+    // Add lights
+    const scene = globeObj.scene();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    dirLight.position.set(1, 1, 1);
+    scene.add(dirLight);
 
-      console.log("🌐 Globe initialized successfully!");
-    }, 400); // small delay ensures globe API is ready
+    globeObj
+      .polygonsData(countries)
+      .polygonCapColor((d) => colorFor(d.properties.name))
+      .polygonSideColor(() => "rgba(50,50,50,0.25)")
+      .polygonStrokeColor(() => "#000")
+      .polygonAltitude(0.01)
+      .onPolygonClick(handleCountryClick);
 
-    return () => clearTimeout(timer);
+    console.log("🌐 Globe initialized successfully!");
   }, [countries]);
 
-  // 🔍 Search + suggestions
+  // 🔍 Search + suggest
   useEffect(() => {
     if (!searchTerm.trim()) return setSuggestions([]);
-    const results = countries
+    const result = countries
       .map((c) => c.properties.name)
       .filter((n) => n.toLowerCase().includes(searchTerm.toLowerCase()))
-      .slice(0, 8);
-    setSuggestions(results);
+      .slice(0, 6);
+    setSuggestions(result);
   }, [searchTerm, countries]);
 
   // ▶ IPTV player setup
@@ -124,8 +126,8 @@ export default function GengasTV() {
   }, [selectedChannel]);
 
   return (
-    <div className="relative h-screen w-full overflow-hidden text-white">
-      {/* 🌌 Background */}
+    <div className="relative h-screen w-full text-white overflow-hidden">
+      {/* Starry background */}
       <div
         className="absolute inset-0"
         style={{
@@ -135,7 +137,7 @@ export default function GengasTV() {
         }}
       />
 
-      {/* Top bar */}
+      {/* Header bar */}
       <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/70 border-b border-cyan-600 z-10">
         <h1 className="text-2xl font-bold text-cyan-400">🌐 Genga TV</h1>
         <div className="relative">
@@ -176,6 +178,7 @@ export default function GengasTV() {
           backgroundColor="rgba(0,0,0,0)"
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
           bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+          onPolygonClick={handleCountryClick}
         />
       </div>
 
@@ -202,7 +205,7 @@ export default function GengasTV() {
         </div>
       )}
 
-      {/* ▶ Player */}
+      {/* Player */}
       {selectedChannel && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 bg-black/90 rounded-xl p-4 w-[640px] border border-cyan-700 shadow-xl">
           <h3 className="text-lg font-bold mb-2 text-cyan-400">
