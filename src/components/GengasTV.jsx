@@ -19,7 +19,7 @@ export default function GengasTV() {
   const [search, setSearch] = useState("");
   const [suggestions, setSuggestions] = useState([]);
 
-  // 🌍 Load globe
+  // 🌍 Load world map
   useEffect(() => {
     fetch("/world-110m.json")
       .then((res) => res.json())
@@ -36,7 +36,7 @@ export default function GengasTV() {
     })();
   }, []);
 
-  // 💡 Add ambient light
+  // 💡 Ambient light for globe
   useEffect(() => {
     if (globeRef.current) {
       const scene = globeRef.current.scene();
@@ -69,6 +69,7 @@ export default function GengasTV() {
     const match =
       keys.find((k) => normalize(k) === normalize(name)) ||
       keys.find((k) => normalize(k).includes(normalize(name)));
+
     if (match) {
       setSelectedCountry({ name: match, channels: channels[match].channels });
       setSidebarOpen(true);
@@ -80,7 +81,7 @@ export default function GengasTV() {
     }
   };
 
-  // 🔎 Search suggest
+  // 🔎 Search with autosuggest
   useEffect(() => {
     if (!search) return setSuggestions([]);
     const results = Object.keys(channels).filter((c) =>
@@ -89,7 +90,7 @@ export default function GengasTV() {
     setSuggestions(results.slice(0, 8));
   }, [search, channels]);
 
-  // 🎬 Player
+  // 🎬 HLS Player setup
   useEffect(() => {
     if (!selectedChannel || selectedChannel.type !== "iptv") return;
     const video = document.getElementById("genga-hls");
@@ -109,15 +110,22 @@ export default function GengasTV() {
 
   const polygonColor = (f) => {
     const n = normalize(f.properties.name);
-    const hue = (n.charCodeAt(0) * 57) % 360;
+    const hue = (n.charCodeAt(0) * 45) % 360;
     return `hsl(${hue}, 70%, 50%)`;
   };
 
   const backToMain = () => {
     setSelectedCountry(null);
-    setSelectedChannel(null);
     setSidebarOpen(false);
     setSearch("");
+    if (globeRef.current)
+      globeRef.current.pointOfView({ lat: 0, lng: 0, altitude: 2.4 }, 800);
+  };
+
+  const closePlayer = () => {
+    setSelectedChannel(null);
+    setSelectedCountry(null); // show search instead of back button
+    setSidebarOpen(false);
     if (globeRef.current)
       globeRef.current.pointOfView({ lat: 0, lng: 0, altitude: 2.4 }, 800);
   };
@@ -131,7 +139,7 @@ export default function GengasTV() {
         overflow: "hidden",
       }}
     >
-      {/* 🧭 Top Bar */}
+      {/* 🧭 Top Navigation Bar */}
       <div
         style={{
           position: "absolute",
@@ -155,7 +163,8 @@ export default function GengasTV() {
           </span>
         </div>
 
-        {!selectedCountry && (
+        {/* 🔍 Search box (only visible in main view) */}
+        {!selectedCountry && !selectedChannel && (
           <div style={{ position: "relative", width: "260px" }}>
             <input
               type="text"
@@ -216,6 +225,7 @@ export default function GengasTV() {
           </div>
         )}
 
+        {/* 🔙 Back button (only for sidebar) */}
         {selectedCountry && !selectedChannel && (
           <button
             onClick={backToMain}
@@ -237,7 +247,7 @@ export default function GengasTV() {
         )}
       </div>
 
-      {/* 🌍 Globe */}
+      {/* 🌍 Interactive Globe */}
       <Globe
         ref={globeRef}
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
@@ -308,7 +318,7 @@ export default function GengasTV() {
         )}
       </AnimatePresence>
 
-      {/* 🎬 Centered Player with Close Button */}
+      {/* 🎬 Centered Player */}
       <AnimatePresence>
         {selectedChannel && (
           <motion.div
@@ -317,7 +327,7 @@ export default function GengasTV() {
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ type: "spring", stiffness: 100 }}
             style={{
-              position: "absolute",
+              position: "fixed",
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
@@ -341,26 +351,36 @@ export default function GengasTV() {
                 {selectedChannel.name}
               </div>
               <FaTimes
-                onClick={() => setSelectedChannel(null)}
+                onClick={closePlayer}
                 style={{
                   color: "#f55",
                   cursor: "pointer",
-                  fontSize: 20,
+                  fontSize: 22,
                 }}
               />
             </div>
+
             {selectedChannel.type === "youtube" ? (
               <iframe
                 src={selectedChannel.url}
                 title="player"
-                style={{ width: "100%", height: "60vh", border: 0 }}
+                style={{
+                  width: "100%",
+                  height: "60vh",
+                  border: 0,
+                  borderRadius: "6px",
+                }}
                 allowFullScreen
               />
             ) : (
               <video
                 id="genga-hls"
                 controls
-                style={{ width: "100%", height: "60vh" }}
+                style={{
+                  width: "100%",
+                  height: "60vh",
+                  borderRadius: "6px",
+                }}
               />
             )}
           </motion.div>
