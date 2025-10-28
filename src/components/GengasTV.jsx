@@ -10,27 +10,24 @@ export default function GengasTV() {
   const [worldData, setWorldData] = useState(null);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [playerChannel, setPlayerChannel] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
 
-  // 🗺️ Load world countries (your GeoJSON)
+  // 🗺️ Load world map data
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(
-          "https://raw.githubusercontent.com/solo12345689/gengas-garden/main/public/countries.geojson.txt"
-        );
-        const json = await res.json();
-        console.log("🌍 Loaded", json.features?.length || 0, "countries");
-        setWorldData(json);
-      } catch (err) {
-        console.error("❌ Failed to load countries:", err);
-      }
-    })();
+    fetch(
+      "https://raw.githubusercontent.com/solo12345689/gengas-garden/main/public/countries.geojson.txt"
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("🌍 Loaded countries:", data.features?.length);
+        setWorldData(data);
+      })
+      .catch((err) => console.error("❌ Error loading world data:", err));
   }, []);
 
-  // 📺 Load channels
+  // 📡 Load channels
   useEffect(() => {
     (async () => {
       const data = await loadChannels();
@@ -39,59 +36,51 @@ export default function GengasTV() {
     })();
   }, []);
 
-  // 🎨 Setup globe
+  // 🎨 Setup globe with multi-color
   useEffect(() => {
-    if (!globeRef.current || !worldData) return;
+    if (!worldData || !globeRef.current) return;
 
     const g = globeRef.current;
+    if (typeof g.polygonsData !== "function") return;
 
-    const setupGlobe = () => {
-      if (typeof g.polygonsData !== "function") {
-        console.warn("⚠️ Globe not ready yet, retrying...");
-        setTimeout(setupGlobe, 400);
-        return;
-      }
+    const colorPalette = [
+      "#FF6B6B",
+      "#4ECDC4",
+      "#FFD93D",
+      "#1A535C",
+      "#FF9F1C",
+      "#2EC4B6",
+      "#E71D36",
+      "#9B5DE5",
+      "#00BBF9",
+      "#F15BB5",
+    ];
 
-      g.polygonsData(worldData.features)
-        .polygonCapColor(() => {
-          const colors = [
-            "#00bcd4",
-            "#4caf50",
-            "#ff9800",
-            "#9c27b0",
-            "#f44336",
-            "#2196f3",
-            "#ffeb3b",
-            "#03a9f4",
-          ];
-          return colors[Math.floor(Math.random() * colors.length)];
-        })
-        .polygonSideColor(() => "rgba(0,0,0,0.25)")
-        .polygonStrokeColor(() => "#111")
-        .polygonAltitude(() => 0.015)
-        .backgroundColor("#000010");
-    };
+    g.polygonsData(worldData.features)
+      .polygonCapColor(() => colorPalette[Math.floor(Math.random() * colorPalette.length)])
+      .polygonSideColor(() => "rgba(0,0,0,0.2)")
+      .polygonStrokeColor(() => "#222")
+      .polygonAltitude(() => 0.02)
+      .onPolygonClick((country) => {
+        const name = country?.properties?.name;
+        if (name && channels[name]) {
+          setSelectedCountry(name);
+          setPlayerChannel(null);
+        }
+      });
 
-    setupGlobe();
-  }, [worldData]);
+    g.controls().autoRotate = true;
+    g.controls().autoRotateSpeed = 0.4;
+  }, [worldData, channels]);
 
-  // 🌍 Click on country
-  const handleCountryClick = (polygon) => {
-    const name = polygon?.properties?.name;
-    if (name) {
-      setSelectedCountry(name);
-      setPlayerChannel(null);
-    }
-  };
-
-  // 🔍 Handle search
+  // 🔍 Search
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
     if (!term) return setSuggestions([]);
     const matches = Object.keys(channels)
       .filter((c) => c.toLowerCase().includes(term))
-      .slice(0, 6);
+      .slice(0, 5);
     setSuggestions(matches);
   };
 
@@ -102,12 +91,11 @@ export default function GengasTV() {
 
   const selectedChannels = channels[selectedCountry]?.channels || [];
 
-  // 🎥 Channel click
+  // 📺 Channel click
   const handleChannelClick = (ch) => {
     setPlayerChannel(ch);
   };
 
-  // ❌ Close player → show search
   const closePlayer = () => {
     setPlayerChannel(null);
     setSelectedCountry(null);
@@ -117,40 +105,37 @@ export default function GengasTV() {
     <div
       className="relative w-screen h-screen overflow-hidden text-white"
       style={{
-        background: "radial-gradient(circle at 20% 20%, #04061a 0%, #000010 100%)",
+        background: "radial-gradient(circle at 30% 20%, #04061a 0%, #000010 100%)",
       }}
     >
-      {/* Globe */}
+      {/* 🌍 Globe */}
       <div className="absolute inset-0">
         <Globe
           ref={globeRef}
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
           bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
           backgroundColor="#000000"
-          onPolygonClick={handleCountryClick}
-          polygonsTransitionDuration={300}
-          enablePointerInteraction={true}
         />
       </div>
 
-      {/* Header */}
-      <div className="absolute top-0 w-full flex justify-between items-center p-4 bg-black/40 backdrop-blur-sm">
-        <h1 className="text-2xl font-bold tracking-wide">
+      {/* 🧭 Top bar */}
+      <div className="absolute top-0 w-full flex justify-between items-center p-4 bg-black/40 backdrop-blur-sm z-50">
+        <h1 className="text-2xl font-bold tracking-wide flex items-center gap-2">
           🌍 <span className="text-cyan-400">Genga TV</span>
         </h1>
         {selectedCountry && !playerChannel && (
           <button
             onClick={() => setSelectedCountry(null)}
-            className="text-white/80 hover:text-white text-lg flex items-center gap-2 bg-green-600/80 px-4 py-2 rounded-full"
+            className="text-white/80 hover:text-white bg-green-600/80 px-4 py-2 rounded-full flex items-center gap-2"
           >
             <FaArrowLeft /> Back
           </button>
         )}
       </div>
 
-      {/* Search */}
+      {/* 🔍 Search box */}
       {!selectedCountry && !playerChannel && (
-        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 w-80 text-center z-50">
+        <div className="absolute top-[20%] left-1/2 transform -translate-x-1/2 w-96 text-center z-50">
           <div className="relative">
             <input
               value={searchTerm}
@@ -161,7 +146,7 @@ export default function GengasTV() {
             <FaSearch className="absolute right-3 top-3 text-white/50" />
           </div>
           {suggestions.length > 0 && (
-            <ul className="bg-black/90 mt-2 rounded-md border border-white/10">
+            <ul className="bg-black/90 mt-2 rounded-md border border-white/10 text-left">
               {suggestions.map((c) => (
                 <li
                   key={c}
@@ -176,18 +161,18 @@ export default function GengasTV() {
         </div>
       )}
 
-      {/* Sidebar */}
+      {/* 📜 Sidebar for country channels */}
       <AnimatePresence>
         {selectedCountry && !playerChannel && (
           <motion.div
-            initial={{ x: "-100%" }}
+            initial={{ x: "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
+            exit={{ x: "100%" }}
             transition={{ duration: 0.4 }}
-            className="absolute left-0 top-0 h-full w-80 bg-black/70 backdrop-blur-md p-4 overflow-y-auto"
+            className="absolute right-0 top-0 h-full w-80 bg-black/70 backdrop-blur-lg p-4 overflow-y-auto z-40"
           >
-            <h2 className="text-xl font-semibold mb-3">
-              {selectedCountry} ({selectedChannels.length})
+            <h2 className="text-xl font-semibold mb-3 text-cyan-400">
+              {selectedCountry} Channels
             </h2>
             {selectedChannels.length === 0 && (
               <p className="text-gray-400">No channels available</p>
@@ -208,7 +193,7 @@ export default function GengasTV() {
         )}
       </AnimatePresence>
 
-      {/* Player */}
+      {/* 🎬 Player (centered) */}
       <AnimatePresence>
         {playerChannel && (
           <motion.div
@@ -216,25 +201,37 @@ export default function GengasTV() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.4 }}
-            className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md z-50"
+            className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md z-50"
           >
-            <div className="relative w-[80%] h-[70%] bg-black rounded-lg shadow-lg overflow-hidden">
-              <button
-                onClick={closePlayer}
-                className="absolute top-3 right-3 text-white text-2xl hover:text-red-400"
-              >
-                <FaTimes />
-              </button>
-              {playerChannel.type === "youtube" ? (
-                <iframe
-                  src={playerChannel.url}
-                  title={playerChannel.name}
-                  className="w-full h-full"
-                  allowFullScreen
-                ></iframe>
-              ) : (
-                <video src={playerChannel.url} controls autoPlay className="w-full h-full" />
-              )}
+            <div className="relative w-[80%] max-w-4xl h-[70%] bg-black rounded-lg shadow-lg overflow-hidden flex flex-col">
+              <div className="flex justify-between items-center bg-cyan-900/50 px-4 py-2">
+                <h2 className="text-cyan-400 font-semibold text-lg">
+                  {playerChannel.name}
+                </h2>
+                <button
+                  onClick={closePlayer}
+                  className="text-white text-2xl hover:text-red-400"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              <div className="flex-1">
+                {playerChannel.type === "youtube" ? (
+                  <iframe
+                    src={playerChannel.url}
+                    title={playerChannel.name}
+                    className="w-full h-full"
+                    allowFullScreen
+                  ></iframe>
+                ) : (
+                  <video
+                    src={playerChannel.url}
+                    controls
+                    autoPlay
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
             </div>
           </motion.div>
         )}
