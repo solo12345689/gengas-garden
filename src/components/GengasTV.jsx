@@ -11,8 +11,6 @@ export default function GengasTV() {
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
 
   // 🌍 Load world data
   useEffect(() => {
@@ -21,12 +19,12 @@ export default function GengasTV() {
       .then((world) => {
         const features = topojson.feature(world, world.objects.countries).features;
         setCountries(features);
-        console.log("✅ World loaded:", features.length);
+        console.log("✅ Loaded countries:", features.length);
       })
-      .catch((err) => console.error("❌ World load failed", err));
+      .catch((err) => console.error("❌ World data load failed", err));
   }, []);
 
-  // 📺 Load channel data
+  // 📺 Load channels
   useEffect(() => {
     (async () => {
       const data = await loadChannels();
@@ -37,14 +35,14 @@ export default function GengasTV() {
     })();
   }, []);
 
-  // Normalize text
-  const normalize = (str) =>
-    str?.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "") || "";
+  // Normalize name helper
+  const normalize = (str) => str?.toLowerCase().replace(/[^a-z]/g, "") || "";
 
   // 🎯 Handle country click
   const handleCountryClick = (country) => {
-    if (!country?.properties?.name) return;
-    const name = country.properties.name;
+    const name = country?.properties?.name;
+    if (!name) return;
+
     const norm = normalize(name);
     const keys = Object.keys(channels);
     const match =
@@ -53,68 +51,50 @@ export default function GengasTV() {
       keys.find((k) => norm.includes(normalize(k)));
 
     if (match) {
-      console.log("🌍 Selected:", match);
+      console.log("🎯 Selected country:", match);
       setSelectedCountry({ name: match, channels: channels[match].channels });
     } else {
-      console.warn("No match for:", name);
+      console.warn("⚠️ No match for", name);
       setSelectedCountry({ name, channels: [] });
     }
   };
 
-  // 🌈 Initialize globe (multicolor + click fix)
+  // 🌈 Initialize globe color + interaction
   useEffect(() => {
     if (!globeRef.current || countries.length === 0) return;
 
-    const globeObj = globeRef.current.globe
-      ? globeRef.current.globe
-      : globeRef.current;
+    const globe = globeRef.current;
+    const scene = globe.scene();
 
-    // Add lighting
-    const scene = globeObj.scene();
+    // Ambient light
     if (!scene.getObjectByName("ambientLight")) {
       const ambient = new THREE.AmbientLight(0xffffff, 0.7);
       ambient.name = "ambientLight";
       scene.add(ambient);
     }
 
+    // Multicolor function
     const colorFor = (name) => {
       const hue = (normalize(name).charCodeAt(0) * 47) % 360;
-      return `hsl(${hue}, 70%, 55%)`;
+      return `hsl(${hue}, 70%, 50%)`;
     };
 
-    try {
-      // Safe fallback for v2.x
-      if (typeof globeObj.polygonsData === "function") {
-        globeObj
+    // Apply polygons only when ready
+    const waitForGlobe = setInterval(() => {
+      if (typeof globe.polygonsData === "function") {
+        globe
           .polygonsData(countries)
           .polygonCapColor((d) => colorFor(d.properties.name))
-          .polygonSideColor(() => "rgba(50,50,50,0.3)")
-          .polygonStrokeColor(() => "#000")
+          .polygonSideColor(() => "rgba(30,30,30,0.3)")
+          .polygonStrokeColor(() => "#111")
           .polygonAltitude(0.01)
           .onPolygonClick(handleCountryClick);
-      } else if (typeof globeObj.hexPolygonsData === "function") {
-        globeObj
-          .hexPolygonsData(countries)
-          .hexPolygonColor((d) => colorFor(d.properties.name))
-          .hexPolygonResolution(3)
-          .onPolygonClick(handleCountryClick);
-      } else {
-        console.error("No polygon API available in this react-globe.gl version");
+        clearInterval(waitForGlobe);
       }
-    } catch (e) {
-      console.error("❌ Globe init failed:", e);
-    }
-  }, [countries]);
+    }, 500);
 
-  // 🔍 Country search suggestions
-  useEffect(() => {
-    if (!searchTerm.trim()) return setSuggestions([]);
-    const result = countries
-      .map((c) => c.properties.name)
-      .filter((n) => n.toLowerCase().includes(searchTerm.toLowerCase()))
-      .slice(0, 6);
-    setSuggestions(result);
-  }, [searchTerm, countries]);
+    return () => clearInterval(waitForGlobe);
+  }, [countries]);
 
   // ▶ IPTV HLS Player
   useEffect(() => {
@@ -144,38 +124,9 @@ export default function GengasTV() {
         }}
       />
 
-      {/* Top bar like TV Garden */}
-      <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/70 border-b border-cyan-600 z-10">
+      {/* Header */}
+      <div className="absolute top-0 left-0 w-full flex items-center justify-center p-4 bg-black/70 z-10 border-b border-cyan-500">
         <h1 className="text-2xl font-bold text-cyan-400">🌐 Genga TV</h1>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Filter countries..."
-            className="px-3 py-2 rounded bg-black/70 text-white outline-none w-64"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          {suggestions.length > 0 && (
-            <div className="absolute bg-black/90 mt-1 w-64 rounded-lg shadow-lg max-h-60 overflow-y-auto z-20">
-              {suggestions.map((s, i) => (
-                <div
-                  key={i}
-                  className="px-3 py-2 hover:bg-cyan-700 cursor-pointer"
-                  onClick={() => {
-                    const found = countries.find(
-                      (c) => c.properties.name.toLowerCase() === s.toLowerCase()
-                    );
-                    if (found) handleCountryClick(found);
-                    setSuggestions([]);
-                    setSearchTerm("");
-                  }}
-                >
-                  {s}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Globe */}
