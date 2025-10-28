@@ -6,7 +6,7 @@ import Hls from "hls.js";
 import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
-  const globeEl = useRef();
+  const globeRef = useRef();
   const [countries, setCountries] = useState([]);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
@@ -14,18 +14,18 @@ export default function GengasTV() {
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
 
-  // ✅ Load map data
+  // 🌍 Load world map
   useEffect(() => {
     fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
       .then((res) => res.json())
       .then((world) => {
-        const countries = topojson.feature(world, world.objects.countries).features;
-        setCountries(countries);
-        console.log("🌍 Loaded", countries.length, "countries");
+        const features = topojson.feature(world, world.objects.countries).features;
+        setCountries(features);
+        console.log("🌍 Loaded", features.length, "countries");
       });
   }, []);
 
-  // ✅ Load channels
+  // 📺 Load channels
   useEffect(() => {
     (async () => {
       const data = await loadChannels();
@@ -34,11 +34,11 @@ export default function GengasTV() {
     })();
   }, []);
 
-  // ✅ Normalize country name
-  const normalize = (name) =>
-    name?.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "") || "";
+  // 🔤 Normalize name
+  const normalize = (str) =>
+    str?.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "") || "";
 
-  // ✅ Handle click on country
+  // 🖱 Handle country click
   const handleCountryClick = (country) => {
     const name = country?.properties?.name;
     if (!name) return;
@@ -59,37 +59,45 @@ export default function GengasTV() {
     }
   };
 
-  // ✅ Initialize the globe once data is ready
+  // 🌈 Initialize the globe (delayed to avoid .polygonsData issue)
   useEffect(() => {
-    if (!globeEl.current || countries.length === 0) return;
-    const globe = globeEl.current;
+    if (!globeRef.current || countries.length === 0) return;
 
-    // 🟡 Add lighting
-    const scene = globe.scene();
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    dirLight.position.set(1, 1, 1);
-    scene.add(dirLight);
+    const timer = setTimeout(() => {
+      const globe = globeRef.current;
+      if (!globe || typeof globe.polygonsData !== "function") {
+        console.warn("⚠️ Globe not ready yet, retrying...");
+        return;
+      }
 
-    // 🌈 Country colors
-    const colorScale = (name) => {
-      const hue = (normalize(name).charCodeAt(0) * 47) % 360;
-      return `hsl(${hue}, 70%, 45%)`;
-    };
+      // Add lighting
+      const scene = globe.scene();
+      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+      const light = new THREE.DirectionalLight(0xffffff, 0.7);
+      light.position.set(1, 1, 1);
+      scene.add(light);
 
-    // ✅ Assign polygon data & click
-    globe
-      .polygonsData(countries)
-      .polygonCapColor((d) => colorScale(d.properties.name))
-      .polygonSideColor(() => "rgba(80,80,80,0.25)")
-      .polygonStrokeColor(() => "#111")
-      .polygonAltitude(0.01)
-      .onPolygonClick(handleCountryClick);
+      // Randomized color palette
+      const colorize = (name) => {
+        const hue = (normalize(name).charCodeAt(0) * 37) % 360;
+        return `hsl(${hue}, 70%, 45%)`;
+      };
 
-    console.log("🌐 Globe initialized!");
+      globe
+        .polygonsData(countries)
+        .polygonCapColor((d) => colorize(d.properties.name))
+        .polygonSideColor(() => "rgba(80,80,80,0.25)")
+        .polygonStrokeColor(() => "#000")
+        .polygonAltitude(0.01)
+        .onPolygonClick(handleCountryClick);
+
+      console.log("🌐 Globe initialized successfully!");
+    }, 400); // small delay ensures globe API is ready
+
+    return () => clearTimeout(timer);
   }, [countries]);
 
-  // ✅ Search
+  // 🔍 Search + suggestions
   useEffect(() => {
     if (!searchTerm.trim()) return setSuggestions([]);
     const results = countries
@@ -99,7 +107,7 @@ export default function GengasTV() {
     setSuggestions(results);
   }, [searchTerm, countries]);
 
-  // ✅ Handle IPTV playback
+  // ▶ IPTV player setup
   useEffect(() => {
     if (!selectedChannel || selectedChannel.type !== "iptv") return;
     const video = document.getElementById("hls-player");
@@ -117,17 +125,17 @@ export default function GengasTV() {
 
   return (
     <div className="relative h-screen w-full overflow-hidden text-white">
-      {/* 🌌 Space background */}
+      {/* 🌌 Background */}
       <div
-        className="absolute inset-0 z-0"
+        className="absolute inset-0"
         style={{
           background:
             "radial-gradient(circle at 50% 50%, #000010, #000000) url('https://www.transparenttextures.com/patterns/stardust.png')",
           backgroundSize: "cover",
         }}
-      ></div>
+      />
 
-      {/* Top Bar */}
+      {/* Top bar */}
       <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/70 border-b border-cyan-600 z-10">
         <h1 className="text-2xl font-bold text-cyan-400">🌐 Genga TV</h1>
         <div className="relative">
@@ -164,14 +172,14 @@ export default function GengasTV() {
       {/* 🌍 Globe */}
       <div className="absolute inset-0 z-0">
         <Globe
-          ref={globeEl}
+          ref={globeRef}
           backgroundColor="rgba(0,0,0,0)"
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
           bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
         />
       </div>
 
-      {/* 📺 Sidebar */}
+      {/* Sidebar */}
       {selectedCountry && (
         <div className="absolute right-0 top-0 h-full w-80 bg-black/85 p-4 overflow-y-auto z-10 border-l border-cyan-700">
           <h2 className="text-xl font-bold text-cyan-400 mb-3">
