@@ -10,23 +10,26 @@ const COUNTRIES_URL =
 
 export default function GengasTV() {
   const globeRef = useRef();
-  const [worldData, setWorldData] = useState(null);
+  const [countries, setCountries] = useState(null);
   const [channels, setChannels] = useState({});
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [playerChannel, setPlayerChannel] = useState(null);
+  const [currentChannel, setCurrentChannel] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const [searchOpen, setSearchOpen] = useState(false);
 
   // 🌍 Load countries
   useEffect(() => {
     fetch(COUNTRIES_URL)
       .then((res) => res.json())
-      .then((data) => setWorldData(data))
-      .catch((err) => console.error("❌ Failed to load countries:", err));
+      .then((data) => {
+        console.log("✅ Countries loaded:", data.features.length);
+        setCountries(data.features);
+      })
+      .catch((err) => console.error("❌ Country load error:", err));
   }, []);
 
-  // 📺 Load channels
+  // 📡 Load channels
   useEffect(() => {
     fetch(CHANNELS_URL)
       .then((res) => res.json())
@@ -34,15 +37,15 @@ export default function GengasTV() {
         console.log("✅ Channels loaded:", Object.keys(data).length);
         setChannels(data);
       })
-      .catch((err) => console.error("❌ Failed to load channels:", err));
+      .catch((err) => console.error("❌ Channel load error:", err));
   }, []);
 
-  // 🎨 Configure Globe (multi-color)
+  // 🧠 Setup globe when data loaded
   useEffect(() => {
-    if (!globeRef.current || !worldData) return;
+    if (!globeRef.current || !countries) return;
     const g = globeRef.current;
 
-    const colors = [
+    const colorPalette = [
       "#FF595E",
       "#FFCA3A",
       "#8AC926",
@@ -50,82 +53,78 @@ export default function GengasTV() {
       "#6A4C93",
       "#2A9D8F",
       "#F4A261",
+      "#E76F51",
+      "#9B5DE5",
     ];
 
-    // ensure correct API
-    if (typeof g.polygonsData === "function") {
-      g.polygonsData(worldData.features)
-        .polygonCapColor(() => colors[Math.floor(Math.random() * colors.length)])
-        .polygonSideColor(() => "rgba(0,0,0,0.25)")
-        .polygonStrokeColor(() => "#111")
-        .polygonAltitude(() => 0.015)
-        .onPolygonClick((feat) => {
-          const name = feat.properties.name;
-          if (channels[name]) setSelectedCountry(name);
-        });
-    }
+    g.polygonsData(countries)
+      .polygonCapColor(() => colorPalette[Math.floor(Math.random() * colorPalette.length)])
+      .polygonSideColor(() => "rgba(0,0,0,0.3)")
+      .polygonStrokeColor(() => "#111")
+      .polygonAltitude(() => 0.015)
+      .onPolygonClick((feat) => {
+        const name = feat.properties.ADMIN || feat.properties.name;
+        if (channels[name]) {
+          setSelectedCountry(name);
+          console.log("🌍 Clicked:", name);
+        }
+      });
 
     g.controls().autoRotate = true;
-    g.controls().autoRotateSpeed = 0.7;
+    g.controls().autoRotateSpeed = 0.6;
     g.pointOfView({ lat: 20, lng: 0, altitude: 2 });
-  }, [worldData, channels]);
+  }, [countries, channels]);
 
-  // 🔍 Search
+  // 🔍 Handle Search
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
     if (!term) return setSuggestions([]);
-    const match = Object.keys(channels)
-      .filter((c) => c.toLowerCase().includes(term))
+    const matches = Object.keys(channels)
+      .filter((name) => name.toLowerCase().includes(term))
       .slice(0, 6);
-    setSuggestions(match);
+    setSuggestions(matches);
   };
 
-  const handleSelectSuggestion = (country) => {
-    setSelectedCountry(country);
+  const selectCountry = (name) => {
+    setSelectedCountry(name);
+    setSearchOpen(false);
     setSearchTerm("");
     setSuggestions([]);
-    setSearchOpen(false);
   };
 
-  // 🎬 Channel control
-  const handleChannelClick = (ch) => {
-    setPlayerChannel(ch); // directly switch to new channel
+  // 🎬 Channel Click (can switch anytime)
+  const playChannel = (ch) => {
+    setCurrentChannel(ch);
   };
 
-  const handleClosePlayer = () => {
-    setPlayerChannel(null);
+  const closePlayer = () => {
+    setCurrentChannel(null);
   };
 
-  const selectedChannels = channels[selectedCountry]?.channels || [];
+  const selectedChannels = selectedCountry ? channels[selectedCountry]?.channels || [] : [];
 
   return (
-    <div
-      className="relative w-screen h-screen overflow-hidden text-white"
-      style={{
-        background:
-          "radial-gradient(circle at 50% 50%, #000010 0%, #020410 100%)",
-      }}
-    >
+    <div className="relative w-screen h-screen overflow-hidden text-white bg-black">
       {/* 🌍 Globe */}
       <div className="absolute inset-0 z-0">
         <Globe
           ref={globeRef}
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-          backgroundColor="#000000"
+          backgroundColor="#000"
         />
       </div>
 
       {/* 🧭 Top Bar */}
-      <div className="absolute top-0 left-0 w-full bg-black/50 flex justify-between items-center px-6 py-3 z-50">
+      <div className="absolute top-0 left-0 w-full bg-black/60 flex justify-between items-center px-6 py-3 z-40">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           🌍 <span className="text-cyan-400">Genga TV</span>
         </h1>
 
-        {/* 🔍 Search */}
+        {/* Search button */}
         <motion.div
           className="relative flex items-center"
-          animate={{ width: searchOpen ? 260 : 40 }}
+          animate={{ width: searchOpen ? 240 : 40 }}
           transition={{ duration: 0.4 }}
         >
           <button
@@ -135,42 +134,39 @@ export default function GengasTV() {
             <FaSearch className="text-cyan-400" />
           </button>
 
-          <AnimatePresence>
-            {searchOpen && (
-              <motion.div
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 40 }}
-                transition={{ duration: 0.3 }}
-                className="absolute right-10"
-              >
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={handleSearch}
-                  placeholder="Search country..."
-                  className="p-2 pl-3 rounded-md bg-black/70 border border-white/20 text-white placeholder-gray-400 w-52 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                />
-                {suggestions.length > 0 && (
-                  <ul className="absolute right-0 mt-2 bg-black/90 border border-white/10 rounded-md text-left w-52 z-50">
-                    {suggestions.map((s) => (
-                      <li
-                        key={s}
-                        className="p-2 hover:bg-white/10 cursor-pointer"
-                        onClick={() => handleSelectSuggestion(s)}
-                      >
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {searchOpen && (
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 40 }}
+              transition={{ duration: 0.3 }}
+              className="absolute right-10"
+            >
+              <input
+                value={searchTerm}
+                onChange={handleSearch}
+                placeholder="Search country..."
+                className="p-2 rounded-md bg-black/80 border border-white/20 text-white placeholder-gray-400 w-52 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              />
+              {suggestions.length > 0 && (
+                <ul className="absolute right-0 mt-2 bg-black/90 border border-white/10 rounded-md text-left w-52 z-50">
+                  {suggestions.map((s) => (
+                    <li
+                      key={s}
+                      className="p-2 hover:bg-white/10 cursor-pointer"
+                      onClick={() => selectCountry(s)}
+                    >
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </motion.div>
+          )}
         </motion.div>
       </div>
 
-      {/* 📡 Sidebar Channel List */}
+      {/* 📺 Sidebar for Channels */}
       <AnimatePresence>
         {selectedCountry && (
           <motion.div
@@ -178,11 +174,12 @@ export default function GengasTV() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ duration: 0.4 }}
-            className="absolute right-0 top-0 w-80 h-full bg-black/70 p-4 backdrop-blur-md z-40 overflow-y-auto"
+            className="absolute right-0 top-0 w-80 h-full bg-black/80 p-4 z-30 overflow-y-auto"
           >
-            <h2 className="text-xl text-cyan-400 font-semibold mb-4">
+            <h2 className="text-lg text-cyan-400 font-semibold mb-3">
               {selectedCountry} Channels
             </h2>
+
             {selectedChannels.length === 0 ? (
               <p className="text-gray-400">No channels available</p>
             ) : (
@@ -190,10 +187,10 @@ export default function GengasTV() {
                 {selectedChannels.map((ch, i) => (
                   <li
                     key={i}
-                    onClick={() => handleChannelClick(ch)}
+                    onClick={() => playChannel(ch)}
                     className={`p-2 flex justify-between items-center hover:bg-white/10 cursor-pointer ${
-                      playerChannel?.name === ch.name
-                        ? "bg-cyan-700/30 border-l-2 border-cyan-400"
+                      currentChannel?.name === ch.name
+                        ? "bg-cyan-700/40 border-l-2 border-cyan-400"
                         : ""
                     }`}
                   >
@@ -207,23 +204,23 @@ export default function GengasTV() {
         )}
       </AnimatePresence>
 
-      {/* 🎬 Player */}
+      {/* 🎬 Player (always centered, 16:9) */}
       <AnimatePresence>
-        {playerChannel && (
+        {currentChannel && (
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.85 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.3 }}
             className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50"
           >
-            <div className="relative w-[80vw] max-w-5xl aspect-video bg-black rounded-lg shadow-lg overflow-hidden border border-cyan-700/40">
+            <div className="relative w-[80vw] max-w-5xl aspect-video bg-black rounded-lg border border-cyan-700/40 overflow-hidden">
               <div className="absolute top-0 left-0 w-full flex justify-between items-center bg-cyan-900/50 px-4 py-2 z-10">
                 <h2 className="text-cyan-400 font-semibold text-lg">
-                  {playerChannel.name}
+                  {currentChannel.name}
                 </h2>
                 <button
-                  onClick={handleClosePlayer}
+                  onClick={closePlayer}
                   className="text-white text-2xl hover:text-red-400"
                 >
                   <FaTimes />
@@ -231,16 +228,16 @@ export default function GengasTV() {
               </div>
 
               <div className="absolute inset-0 mt-8">
-                {playerChannel.type === "youtube" ? (
+                {currentChannel.type === "youtube" ? (
                   <iframe
-                    src={playerChannel.url}
-                    title={playerChannel.name}
+                    src={currentChannel.url}
+                    title={currentChannel.name}
                     className="w-full h-full"
                     allowFullScreen
                   ></iframe>
                 ) : (
                   <video
-                    src={playerChannel.url}
+                    src={currentChannel.url}
                     controls
                     autoPlay
                     className="w-full h-full object-contain"
