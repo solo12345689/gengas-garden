@@ -1,435 +1,311 @@
-// src/components/GengasTV.jsx
 import React, { useEffect, useRef, useState } from "react";
-import Globe from "react-globe.gl";
-import * as topojson from "topojson-client";
-import * as THREE from "three";
-import { geoCentroid } from "d3-geo";
-import Hls from "hls.js";
+import Globe from "globe.gl";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaArrowLeft, FaSearch, FaTimes } from "react-icons/fa";
-import { loadChannels } from "../utils/fetchChannels";
+import { FaTimes, FaGlobe, FaArrowLeft } from "react-icons/fa";
+import fetchChannels from "../utils/fetchChannels";
 
-export default function GengasTV() {
+const GengasTV = () => {
   const globeRef = useRef();
-  const [worldFeatures, setWorldFeatures] = useState([]);
-  const [channels, setChannels] = useState({});
+  const [globeReady, setGlobeReady] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [channels, setChannels] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
+  const [showSearch, setShowSearch] = useState(true);
+  const [showBackButton, setShowBackButton] = useState(false);
 
-  // 🌍 Load world map
+  // 🌍 Load countries and channels
   useEffect(() => {
-    fetch("/world-110m.json")
+    fetch("/countries.geojson")
       .then((res) => res.json())
-      .then((world) => {
-        setWorldFeatures(topojson.feature(world, world.objects.countries).features);
+      .then((data) => {
+        setCountries(data.features);
+        console.log("🌍 Loaded", data.features.length, "countries");
       });
+
+    fetchChannels().then((data) => {
+      setChannels(data);
+      console.log("✅ Channels loaded:", data.length);
+    });
   }, []);
 
-  // 📡 Load channels
+  // 🌐 Initialize Globe
   useEffect(() => {
-    (async () => {
-      const data = await loadChannels();
-      setChannels(data || {});
-    })();
-  }, []);
+    if (globeRef.current && !globeReady && countries.length > 0) {
+      const globe = Globe()(globeRef.current);
+      globe
+        .globeImageUrl(
+          "//unpkg.com/three-globe/example/img/earth-dark.jpg"
+        )
+        .backgroundColor("#000")
+        .showAtmosphere(true)
+        .atmosphereColor("cyan")
+        .atmosphereAltitude(0.25)
+        .polygonsData(countries)
+        .polygonCapColor(() => `rgba(${Math.random()*255},${Math.random()*255},${Math.random()*255},0.9)`)
+        .polygonSideColor(() => "rgba(0,100,255,0.15)")
+        .polygonStrokeColor(() => "#111")
+        .onPolygonClick((polygon) => {
+          const country = polygon.properties.ADMIN;
+          console.log("🌍 Clicked:", country);
+          setSelectedCountry(country);
+          setShowSearch(false);
+          setShowBackButton(true);
+        })
+        .polygonsTransitionDuration(300);
 
-  // 💡 Ambient light for globe
-  useEffect(() => {
-    if (globeRef.current) {
-      const scene = globeRef.current.scene();
-      if (!scene.getObjectByName("ambient")) {
-        const light = new THREE.AmbientLight(0xffffff, 1);
-        light.name = "ambient";
-        scene.add(light);
-      }
+      setGlobeReady(true);
     }
-  }, []);
+  }, [countries, globeReady]);
 
-  const normalize = (str) => (str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
-  const handleCountryClick = (feature) => {
-    const name = feature?.properties?.name;
-    if (!name) return;
-    showCountry(name);
-
-    const centroid = geoCentroid(feature);
-    if (globeRef.current && centroid.length === 2) {
-      globeRef.current.pointOfView(
-        { lat: centroid[1], lng: centroid[0], altitude: 1.3 },
-        1200
-      );
-    }
+  // 🎬 Select Channel
+  const openChannel = (ch) => {
+    setSelectedChannel(ch);
+    setShowSearch(false);
+    setShowBackButton(false);
   };
 
-  const showCountry = (name) => {
-    const keys = Object.keys(channels);
-    const match =
-      keys.find((k) => normalize(k) === normalize(name)) ||
-      keys.find((k) => normalize(k).includes(normalize(name)));
-
-    if (match) {
-      setSelectedCountry({ name: match, channels: channels[match].channels });
-      setSidebarOpen(true);
-      setSelectedChannel(null);
-    } else {
-      setSelectedCountry({ name, channels: [] });
-      setSidebarOpen(true);
-      setSelectedChannel(null);
-    }
-  };
-
-  // 🔎 Search with autosuggest
-  useEffect(() => {
-    if (!search) return setSuggestions([]);
-    const results = Object.keys(channels).filter((c) =>
-      c.toLowerCase().includes(search.toLowerCase())
-    );
-    setSuggestions(results.slice(0, 8));
-  }, [search, channels]);
-
-  // 🎬 HLS Player setup
-  useEffect(() => {
-    if (!selectedChannel || selectedChannel.type !== "iptv") return;
-    const video = document.getElementById("genga-hls");
-    if (!video) return;
-
-    if (selectedChannel.url.endsWith(".m3u8") && Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(selectedChannel.url);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-      return () => hls.destroy();
-    } else {
-      video.src = selectedChannel.url;
-      video.play().catch(() => {});
-    }
-  }, [selectedChannel]);
-
-  const polygonColor = (f) => {
-    const n = normalize(f.properties.name);
-    const hue = (n.charCodeAt(0) * 45) % 360;
-    return `hsl(${hue}, 70%, 50%)`;
-  };
-
-  const backToMain = () => {
-    setSelectedCountry(null);
-    setSidebarOpen(false);
-    setSearch("");
-    if (globeRef.current)
-      globeRef.current.pointOfView({ lat: 0, lng: 0, altitude: 2.4 }, 800);
-  };
-
+  // ❌ Close Player → back to search
   const closePlayer = () => {
     setSelectedChannel(null);
-    setSelectedCountry(null); // show search instead of back button
-    setSidebarOpen(false);
-    if (globeRef.current)
-      globeRef.current.pointOfView({ lat: 0, lng: 0, altitude: 2.4 }, 800);
+    setShowSearch(true);
+    setShowBackButton(false);
+  };
+
+  // 🔙 Back to Globe
+  const handleBack = () => {
+    setSelectedCountry(null);
+    setShowSearch(true);
+    setShowBackButton(false);
   };
 
   return (
     <div
       style={{
+        position: "relative",
         height: "100vh",
         width: "100%",
-        background: "radial-gradient(circle at 50% 50%, #000010, #000)",
+        background: "radial-gradient(circle at center, #000 60%, #001019 100%)",
         overflow: "hidden",
       }}
     >
-      {/* 🧭 Top Navigation Bar */}
+      {/* 🌐 Header */}
       <div
+        style={{
+          position: "absolute",
+          top: 10,
+          left: 20,
+          display: "flex",
+          alignItems: "center",
+          color: "#19e6d1",
+          fontWeight: "bold",
+          fontSize: 22,
+          zIndex: 10,
+        }}
+      >
+        <FaGlobe style={{ marginRight: 10 }} />
+        Genga TV
+      </div>
+
+      {/* 🔙 Back Button */}
+      {showBackButton && (
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={handleBack}
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 20,
+            background: "#8FE360",
+            color: "#000",
+            border: "none",
+            borderRadius: 10,
+            padding: "8px 16px",
+            fontWeight: "bold",
+            cursor: "pointer",
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <FaArrowLeft /> Back
+        </motion.button>
+      )}
+
+      {/* 🌎 Globe */}
+      <div
+        ref={globeRef}
         style={{
           position: "absolute",
           top: 0,
           left: 0,
-          right: 0,
-          zIndex: 20,
-          background: "rgba(0,0,0,0.65)",
-          padding: "8px 16px",
-          borderBottom: "1px solid rgba(0,255,255,0.1)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          backdropFilter: "blur(6px)",
+          width: "100%",
+          height: "100%",
         }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 22 }}>🌐</span>
-          <span style={{ color: "#19e6d1", fontSize: 20, fontWeight: 700 }}>
-            Genga TV
-          </span>
-        </div>
-
-        {/* 🔍 Search box (only visible in main view) */}
-        {!selectedCountry && !selectedChannel && (
-          <div style={{ position: "relative", width: "260px" }}>
-            <input
-              type="text"
-              placeholder="Search country..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "6px 10px",
-                borderRadius: "6px",
-                border: "1px solid #19e6d1",
-                background: "#000",
-                color: "#19e6d1",
-                outline: "none",
-              }}
-            />
-            <FaSearch
-              style={{
-                position: "absolute",
-                top: "8px",
-                right: "10px",
-                color: "#19e6d1",
-              }}
-            />
-            {suggestions.length > 0 && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "36px",
-                  left: 0,
-                  right: 0,
-                  background: "#0a0a0a",
-                  border: "1px solid #19e6d1",
-                  zIndex: 50,
-                  borderRadius: 6,
-                  overflow: "hidden",
-                }}
-              >
-                {suggestions.map((s, i) => (
-                  <div
-                    key={i}
-                    onClick={() => {
-                      showCountry(s);
-                      setSearch("");
-                      setSuggestions([]);
-                    }}
-                    style={{
-                      padding: "6px 10px",
-                      cursor: "pointer",
-                      color: "#19e6d1",
-                    }}
-                  >
-                    {s}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 🔙 Back button (only for sidebar) */}
-        {selectedCountry && !selectedChannel && (
-          <button
-            onClick={backToMain}
-            style={{
-              background: "#7ac943",
-              border: "none",
-              color: "#000",
-              padding: "8px 14px",
-              borderRadius: "12px",
-              cursor: "pointer",
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <FaArrowLeft /> Back
-          </button>
-        )}
-      </div>
-
-      {/* 🌍 Interactive Globe */}
-      <Globe
-        ref={globeRef}
-        globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
-        backgroundColor="rgba(0,0,0,0)"
-        polygonsData={worldFeatures}
-        polygonCapColor={polygonColor}
-        polygonSideColor={() => "rgba(0,0,0,0.2)"}
-        polygonStrokeColor={() => "#000"}
-        polygonAltitude={0.01}
-        onPolygonClick={handleCountryClick}
-        atmosphereColor="#18e0c0"
-        atmosphereAltitude={0.25}
-        showAtmosphere
       />
 
-      {/* 📜 Sidebar */}
+      {/* 🔍 Channel List (Search Section) */}
       <AnimatePresence>
-        {sidebarOpen && selectedCountry && !selectedChannel && (
+        {showSearch && selectedCountry && (
           <motion.div
-            initial={{ x: 400 }}
-            animate={{ x: 0 }}
-            exit={{ x: 400 }}
-            transition={{ type: "spring", stiffness: 120 }}
+            initial={{ x: 300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 300, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 100 }}
             style={{
               position: "absolute",
               right: 0,
-              top: 60,
-              bottom: 0,
-              width: 350,
-              background: "rgba(12,12,12,0.95)",
-              borderLeft: "1px solid rgba(25,230,210,0.2)",
+              top: 0,
+              height: "100%",
+              width: 300,
+              background: "rgba(0,0,0,0.85)",
+              borderLeft: "1px solid #19e6d1",
+              color: "white",
               overflowY: "auto",
-              padding: 12,
-              zIndex: 20,
+              padding: "20px 12px",
+              zIndex: 5,
             }}
           >
-            <div
+            <h2 style={{ color: "#19e6d1" }}>{selectedCountry}</h2>
+            <input
+              type="text"
+              placeholder={`Search in ${selectedCountry}`}
               style={{
-                fontWeight: 700,
+                width: "100%",
+                padding: "6px 10px",
+                borderRadius: 8,
+                marginBottom: 12,
+                border: "1px solid #19e6d1",
+                background: "#000",
                 color: "#19e6d1",
-                marginBottom: 10,
-                fontSize: 18,
               }}
-            >
-              {selectedCountry.name}
-            </div>
-
-            {(selectedCountry.channels || []).map((ch, i) => (
-              <div
-                key={i}
-                onClick={() => {
-                  setSelectedChannel(ch);
-                  setSidebarOpen(false);
-                }}
-                style={{
-                  padding: "10px 12px",
-                  marginBottom: 6,
-                  background: "#0a0a0a",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                }}
-              >
-                <div style={{ fontWeight: 600 }}>{ch.name}</div>
-                <div style={{ fontSize: 12, color: "#999" }}>{ch.type}</div>
-              </div>
-            ))}
+            />
+            {channels
+              .filter(
+                (ch) =>
+                  ch.country?.toLowerCase() ===
+                  selectedCountry.toLowerCase()
+              )
+              .map((ch, i) => (
+                <div
+                  key={i}
+                  onClick={() => openChannel(ch)}
+                  style={{
+                    padding: "10px 0",
+                    borderBottom: "1px solid rgba(255,255,255,0.1)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div style={{ fontWeight: "bold" }}>{ch.name}</div>
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>
+                    {ch.type}
+                  </div>
+                </div>
+              ))}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 🎬 Centered Player */}
-<AnimatePresence>
-  {selectedChannel && (
-    <>
-      {/* Dim background overlay */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.6 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
-          zIndex: 999,
-        }}
-        onClick={closePlayer}
-      />
-
-      {/* Player window */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.8 }}
-        transition={{ type: "spring", stiffness: 120 }}
-        style={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "min(85vw, 960px)",
-          height: "min(75vh, 540px)",
-          background: "#090f13",
-          borderRadius: 12,
-          boxShadow: "0 0 40px rgba(0,255,255,0.25)",
-          padding: "12px 16px",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-start",
-          alignItems: "center",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 8,
-          }}
-        >
-          <div style={{ color: "#19e6d1", fontWeight: 700, fontSize: 18 }}>
-            {selectedChannel.name}
-          </div>
-          <FaTimes
-            onClick={closePlayer}
+      {/* 🎬 Player (Centered) */}
+      <AnimatePresence>
+        {selectedChannel && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 120 }}
             style={{
-              color: "#ff4c4c",
-              cursor: "pointer",
-              fontSize: 22,
-              transition: "0.2s ease",
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "min(90vw, 960px)",
+              height: "min(80vh, 540px)",
+              background: "#090f13",
+              borderRadius: 12,
+              boxShadow: "0 0 40px rgba(0,255,255,0.25)",
+              padding: "12px 16px",
+              zIndex: 1001,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "flex-start",
+              alignItems: "center",
+              overflow: "hidden",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#ff6666")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#ff4c4c")}
-          />
-        </div>
+          >
+            {/* Header */}
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ color: "#19e6d1", fontWeight: 700, fontSize: 18 }}>
+                {selectedChannel.name}
+              </div>
+              <FaTimes
+                onClick={closePlayer}
+                style={{
+                  color: "#ff4c4c",
+                  cursor: "pointer",
+                  fontSize: 22,
+                  transition: "0.2s ease",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.color = "#ff6666")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color = "#ff4c4c")
+                }
+              />
+            </div>
 
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          {selectedChannel.type === "youtube" ? (
-            <iframe
-              src={selectedChannel.url}
-              title="player"
-              allowFullScreen
+            {/* Video Area */}
+            <div
               style={{
                 width: "100%",
                 height: "100%",
-                border: 0,
-                borderRadius: 8,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
               }}
-            />
-          ) : (
-            <video
-              id="genga-hls"
-              controls
-              autoPlay
-              style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: 8,
-                objectFit: "cover",
-              }}
-            />
-          )}
-        </div>
-      </motion.div>
-    </>
-  )}
-</AnimatePresence>
-
-      
+            >
+              {selectedChannel.type === "youtube" ? (
+                <iframe
+                  src={selectedChannel.url}
+                  title="player"
+                  allowFullScreen
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    border: 0,
+                    borderRadius: 8,
+                  }}
+                />
+              ) : (
+                <video
+                  id="genga-hls"
+                  controls
+                  autoPlay
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 8,
+                    objectFit: "cover",
+                  }}
+                />
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-}
+};
+
+export default GengasTV;
