@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { geoCentroid } from "d3-geo";
 import Hls from "hls.js";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaArrowLeft, FaSearch } from "react-icons/fa";
+import { FaArrowLeft, FaSearch, FaTimes } from "react-icons/fa";
 import { loadChannels } from "../utils/fetchChannels";
 
 export default function GengasTV() {
@@ -19,13 +19,12 @@ export default function GengasTV() {
   const [search, setSearch] = useState("");
   const [suggestions, setSuggestions] = useState([]);
 
-  // 🌍 Load world data
+  // 🌍 Load globe
   useEffect(() => {
     fetch("/world-110m.json")
       .then((res) => res.json())
       .then((world) => {
         setWorldFeatures(topojson.feature(world, world.objects.countries).features);
-        console.log("🌍 Loaded world data");
       });
   }, []);
 
@@ -34,11 +33,10 @@ export default function GengasTV() {
     (async () => {
       const data = await loadChannels();
       setChannels(data || {});
-      console.log("✅ Channels loaded:", Object.keys(data).length);
     })();
   }, []);
 
-  // 💡 Add ambient light to globe
+  // 💡 Add ambient light
   useEffect(() => {
     if (globeRef.current) {
       const scene = globeRef.current.scene();
@@ -52,7 +50,6 @@ export default function GengasTV() {
 
   const normalize = (str) => (str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
-  // 🖱 Handle country click
   const handleCountryClick = (feature) => {
     const name = feature?.properties?.name;
     if (!name) return;
@@ -83,19 +80,16 @@ export default function GengasTV() {
     }
   };
 
-  // 🔎 Handle search
+  // 🔎 Search suggest
   useEffect(() => {
-    if (!search) {
-      setSuggestions([]);
-      return;
-    }
+    if (!search) return setSuggestions([]);
     const results = Object.keys(channels).filter((c) =>
       c.toLowerCase().includes(search.toLowerCase())
     );
     setSuggestions(results.slice(0, 8));
   }, [search, channels]);
 
-  // 🎬 Handle IPTV playback
+  // 🎬 Player
   useEffect(() => {
     if (!selectedChannel || selectedChannel.type !== "iptv") return;
     const video = document.getElementById("genga-hls");
@@ -116,7 +110,7 @@ export default function GengasTV() {
   const polygonColor = (f) => {
     const n = normalize(f.properties.name);
     const hue = (n.charCodeAt(0) * 57) % 360;
-    return `hsl(${hue}, 70%, 55%)`;
+    return `hsl(${hue}, 70%, 50%)`;
   };
 
   const backToMain = () => {
@@ -222,7 +216,7 @@ export default function GengasTV() {
           </div>
         )}
 
-        {selectedCountry && (
+        {selectedCountry && !selectedChannel && (
           <button
             onClick={backToMain}
             style={{
@@ -314,7 +308,7 @@ export default function GengasTV() {
         )}
       </AnimatePresence>
 
-      {/* 🎬 Centered Player */}
+      {/* 🎬 Centered Player with Close Button */}
       <AnimatePresence>
         {selectedChannel && (
           <motion.div
@@ -335,8 +329,25 @@ export default function GengasTV() {
               zIndex: 50,
             }}
           >
-            <div style={{ color: "#19e6d1", fontWeight: 700, marginBottom: 8 }}>
-              {selectedChannel.name}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ color: "#19e6d1", fontWeight: 700 }}>
+                {selectedChannel.name}
+              </div>
+              <FaTimes
+                onClick={() => setSelectedChannel(null)}
+                style={{
+                  color: "#f55",
+                  cursor: "pointer",
+                  fontSize: 20,
+                }}
+              />
             </div>
             {selectedChannel.type === "youtube" ? (
               <iframe
