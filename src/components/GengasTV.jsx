@@ -14,27 +14,30 @@ export default function GengasTV() {
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
 
-  // 🌍 Load world map
+  // 🌍 Load world data
   useEffect(() => {
-    fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+    fetch("/world-110m.json")
       .then((res) => res.json())
       .then((world) => {
         const features = topojson.feature(world, world.objects.countries).features;
         setCountries(features);
-        console.log("🌍 Loaded countries:", features.length);
-      });
+        console.log("✅ World loaded:", features.length);
+      })
+      .catch((err) => console.error("❌ World load failed", err));
   }, []);
 
-  // 📺 Load channels
+  // 📺 Load channel data
   useEffect(() => {
     (async () => {
       const data = await loadChannels();
-      setChannels(data || {});
-      console.log("✅ Channels loaded:", Object.keys(data || {}).length);
+      if (data) {
+        setChannels(data);
+        console.log("✅ Channels loaded:", Object.keys(data).length);
+      }
     })();
   }, []);
 
-  // 🔤 Normalize for fuzzy matching
+  // Normalize text
   const normalize = (str) =>
     str?.toLowerCase().replace(/\s+/g, "").replace(/[^a-z]/g, "") || "";
 
@@ -50,56 +53,60 @@ export default function GengasTV() {
       keys.find((k) => norm.includes(normalize(k)));
 
     if (match) {
-      console.log("✅ Clicked:", match);
+      console.log("🌍 Selected:", match);
       setSelectedCountry({ name: match, channels: channels[match].channels });
     } else {
-      console.log("⚠️ No channel match for", name);
+      console.warn("No match for:", name);
       setSelectedCountry({ name, channels: [] });
     }
   };
 
-  // 🌈 Initialize globe with multicolor polygons + working click
+  // 🌈 Initialize globe (multicolor + click fix)
   useEffect(() => {
     if (!globeRef.current || countries.length === 0) return;
 
-    const globeObj =
-      globeRef.current.globe || globeRef.current; // 🧠 Handle version differences
+    const globeObj = globeRef.current.globe
+      ? globeRef.current.globe
+      : globeRef.current;
 
-    // Safety check
-    if (typeof globeObj.polygonsData !== "function") {
-      console.warn("Globe not ready yet. Retrying...");
-      setTimeout(() => {
-        if (typeof globeObj.polygonsData === "function") {
-          globeObj.polygonsData(countries);
-        }
-      }, 300);
-      return;
+    // Add lighting
+    const scene = globeObj.scene();
+    if (!scene.getObjectByName("ambientLight")) {
+      const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+      ambient.name = "ambientLight";
+      scene.add(ambient);
     }
 
     const colorFor = (name) => {
       const hue = (normalize(name).charCodeAt(0) * 47) % 360;
-      return `hsl(${hue}, 70%, 50%)`;
+      return `hsl(${hue}, 70%, 55%)`;
     };
 
-    // Add lights
-    const scene = globeObj.scene();
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    dirLight.position.set(1, 1, 1);
-    scene.add(dirLight);
-
-    globeObj
-      .polygonsData(countries)
-      .polygonCapColor((d) => colorFor(d.properties.name))
-      .polygonSideColor(() => "rgba(50,50,50,0.25)")
-      .polygonStrokeColor(() => "#000")
-      .polygonAltitude(0.01)
-      .onPolygonClick(handleCountryClick);
-
-    console.log("🌐 Globe initialized successfully!");
+    try {
+      // Safe fallback for v2.x
+      if (typeof globeObj.polygonsData === "function") {
+        globeObj
+          .polygonsData(countries)
+          .polygonCapColor((d) => colorFor(d.properties.name))
+          .polygonSideColor(() => "rgba(50,50,50,0.3)")
+          .polygonStrokeColor(() => "#000")
+          .polygonAltitude(0.01)
+          .onPolygonClick(handleCountryClick);
+      } else if (typeof globeObj.hexPolygonsData === "function") {
+        globeObj
+          .hexPolygonsData(countries)
+          .hexPolygonColor((d) => colorFor(d.properties.name))
+          .hexPolygonResolution(3)
+          .onPolygonClick(handleCountryClick);
+      } else {
+        console.error("No polygon API available in this react-globe.gl version");
+      }
+    } catch (e) {
+      console.error("❌ Globe init failed:", e);
+    }
   }, [countries]);
 
-  // 🔍 Search + suggest
+  // 🔍 Country search suggestions
   useEffect(() => {
     if (!searchTerm.trim()) return setSuggestions([]);
     const result = countries
@@ -109,7 +116,7 @@ export default function GengasTV() {
     setSuggestions(result);
   }, [searchTerm, countries]);
 
-  // ▶ IPTV player setup
+  // ▶ IPTV HLS Player
   useEffect(() => {
     if (!selectedChannel || selectedChannel.type !== "iptv") return;
     const video = document.getElementById("hls-player");
@@ -127,7 +134,7 @@ export default function GengasTV() {
 
   return (
     <div className="relative h-screen w-full text-white overflow-hidden">
-      {/* Starry background */}
+      {/* Background */}
       <div
         className="absolute inset-0"
         style={{
@@ -137,13 +144,13 @@ export default function GengasTV() {
         }}
       />
 
-      {/* Header bar */}
+      {/* Top bar like TV Garden */}
       <div className="absolute top-0 left-0 w-full flex items-center justify-between p-4 bg-black/70 border-b border-cyan-600 z-10">
         <h1 className="text-2xl font-bold text-cyan-400">🌐 Genga TV</h1>
         <div className="relative">
           <input
             type="text"
-            placeholder="Search country..."
+            placeholder="Filter countries..."
             className="px-3 py-2 rounded bg-black/70 text-white outline-none w-64"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -171,14 +178,13 @@ export default function GengasTV() {
         </div>
       </div>
 
-      {/* 🌍 Globe */}
+      {/* Globe */}
       <div className="absolute inset-0 z-0">
         <Globe
           ref={globeRef}
           backgroundColor="rgba(0,0,0,0)"
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
           bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-          onPolygonClick={handleCountryClick}
         />
       </div>
 
