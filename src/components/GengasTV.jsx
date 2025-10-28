@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import Globe from "react-globe.gl";
-import * as THREE from "three";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaSearch, FaTimes, FaPlay } from "react-icons/fa";
 
@@ -19,7 +18,7 @@ export default function GengasTV() {
   const [suggestions, setSuggestions] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // Load country shapes
+  // 🌍 Load countries
   useEffect(() => {
     fetch(COUNTRIES_URL)
       .then((res) => res.json())
@@ -27,7 +26,7 @@ export default function GengasTV() {
       .catch((err) => console.error("❌ Failed to load countries:", err));
   }, []);
 
-  // Load channels
+  // 📺 Load channels
   useEffect(() => {
     fetch(CHANNELS_URL)
       .then((res) => res.json())
@@ -38,7 +37,7 @@ export default function GengasTV() {
       .catch((err) => console.error("❌ Failed to load channels:", err));
   }, []);
 
-  // Configure Globe
+  // 🎨 Configure Globe
   useEffect(() => {
     if (!globeRef.current || !worldData) return;
     const g = globeRef.current;
@@ -54,11 +53,12 @@ export default function GengasTV() {
       "#F4A261",
     ];
 
-    g.polygonsData(worldData.features)
+    g
+      .polygonsData(worldData.features)
       .polygonCapColor(() => colors[Math.floor(Math.random() * colors.length)])
-      .polygonSideColor(() => "rgba(0,0,0,0.3)")
+      .polygonSideColor(() => "rgba(0,0,0,0.25)")
       .polygonStrokeColor(() => "#111")
-      .polygonAltitude(() => 0.02)
+      .polygonAltitude(() => 0.015)
       .onPolygonClick((feat) => {
         const name = feat.properties.name;
         if (channels[name]) setSelectedCountry(name);
@@ -68,7 +68,7 @@ export default function GengasTV() {
     g.controls().autoRotateSpeed = 0.6;
   }, [worldData, channels]);
 
-  // Search handler
+  // 🔍 Search
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
@@ -121,14 +121,13 @@ export default function GengasTV() {
           🌍 <span className="text-cyan-400">Genga TV</span>
         </h1>
 
-        {/* 🔍 Animated Search Section */}
+        {/* 🔍 Search */}
         {!playerChannel && (
           <motion.div
             className="relative flex items-center"
             animate={{ width: searchOpen ? 260 : 40 }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
+            transition={{ duration: 0.4 }}
           >
-            {/* Icon button */}
             <button
               onClick={() => setSearchOpen(!searchOpen)}
               className="p-2 bg-cyan-500/20 rounded-full hover:bg-cyan-500/40"
@@ -136,7 +135,6 @@ export default function GengasTV() {
               <FaSearch className="text-cyan-400" />
             </button>
 
-            {/* Expanding input */}
             <AnimatePresence>
               {searchOpen && (
                 <motion.div
@@ -173,7 +171,7 @@ export default function GengasTV() {
         )}
       </div>
 
-      {/* 📺 Sidebar */}
+      {/* 📡 Sidebar Channel List */}
       <AnimatePresence>
         {selectedCountry && !playerChannel && (
           <motion.div
@@ -210,14 +208,15 @@ export default function GengasTV() {
       <AnimatePresence>
         {playerChannel && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
+            exit={{ opacity: 0, scale: 0.85 }}
             transition={{ duration: 0.4 }}
             className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-50"
           >
-            <div className="relative w-[80%] max-w-4xl h-[70%] bg-black rounded-lg shadow-xl overflow-hidden">
-              <div className="flex justify-between items-center bg-cyan-900/50 px-4 py-2">
+            {/* Maintain 16:9 ratio */}
+            <div className="relative w-[80vw] max-w-5xl aspect-video bg-black rounded-lg shadow-lg overflow-hidden">
+              <div className="absolute top-0 left-0 w-full flex justify-between items-center bg-cyan-900/50 px-4 py-2 z-10">
                 <h2 className="text-cyan-400 font-semibold text-lg">
                   {playerChannel.name}
                 </h2>
@@ -228,7 +227,9 @@ export default function GengasTV() {
                   <FaTimes />
                 </button>
               </div>
-              <div className="flex-1">
+
+              {/* Player content */}
+              <div className="absolute inset-0 mt-8">
                 {playerChannel.type === "youtube" ? (
                   <iframe
                     src={playerChannel.url}
