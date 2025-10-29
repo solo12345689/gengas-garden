@@ -21,12 +21,13 @@ export default function GengasTV() {
   // 🌍 Load countries
   useEffect(() => {
     fetch(COUNTRIES_URL)
-      .then((res) => res.json())
+      .then((res) => res.text()) // File is .txt, so parse manually
+      .then((text) => JSON.parse(text))
       .then((data) => {
-        console.log("✅ Countries loaded:", data.features.length);
+        console.log("✅ Loaded countries:", data.features.length);
         setCountries(data.features);
       })
-      .catch((err) => console.error("❌ Country load error:", err));
+      .catch((err) => console.error("❌ Country load failed:", err));
   }, []);
 
   // 📡 Load channels
@@ -34,16 +35,27 @@ export default function GengasTV() {
     fetch(CHANNELS_URL)
       .then((res) => res.json())
       .then((data) => {
-        console.log("✅ Channels loaded:", Object.keys(data).length);
+        console.log("✅ Loaded channels:", Object.keys(data).length);
         setChannels(data);
       })
-      .catch((err) => console.error("❌ Channel load error:", err));
+      .catch((err) => console.error("❌ Channel load failed:", err));
   }, []);
 
-  // 🧠 Setup globe when data loaded
+  // 🧠 Setup globe after load
   useEffect(() => {
     if (!globeRef.current || !countries) return;
     const g = globeRef.current;
+
+    // Wait for the globe instance to be ready
+    if (typeof g.polygonsData !== "function") {
+      console.warn("⚠️ Globe not ready yet, retrying...");
+      const timer = setTimeout(() => {
+        if (globeRef.current && typeof globeRef.current.polygonsData === "function") {
+          globeRef.current.polygonsData(countries);
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
 
     const colorPalette = [
       "#FF595E",
@@ -66,13 +78,13 @@ export default function GengasTV() {
         const name = feat.properties.ADMIN || feat.properties.name;
         if (channels[name]) {
           setSelectedCountry(name);
-          console.log("🌍 Clicked:", name);
+          console.log("🌍 Clicked country:", name);
         }
       });
 
     g.controls().autoRotate = true;
-    g.controls().autoRotateSpeed = 0.6;
-    g.pointOfView({ lat: 20, lng: 0, altitude: 2 });
+    g.controls().autoRotateSpeed = 0.7;
+    g.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
   }, [countries, channels]);
 
   // 🔍 Handle Search
@@ -204,7 +216,7 @@ export default function GengasTV() {
         )}
       </AnimatePresence>
 
-      {/* 🎬 Player (always centered, 16:9) */}
+      {/* 🎬 Player */}
       <AnimatePresence>
         {currentChannel && (
           <motion.div
